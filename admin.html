@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel WISP | Infinit Flores</title>
+  <link rel="stylesheet" href="estilos.css"/>
+  <link rel="stylesheet" href="admin.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="admin-body admin-locked">
+  <section class="login-screen" id="loginScreen">
+    <form class="login-card" id="loginForm">
+      <div class="brand login-brand">
+        <span class="brand-mark" aria-hidden="true">∞</span>
+        <span>
+          <strong>Infinit</strong>
+          <small>Panel privado</small>
+        </span>
+      </div>
+      <h1>Acceso administrador</h1>
+      <p>Ingresa para administrar clientes, recargas y cortes MikroTik.</p>
+      <div class="form-row">
+        <label for="loginUser">Usuario</label>
+        <input id="loginUser" type="text" autocomplete="username" required/>
+      </div>
+      <div class="form-row">
+        <label for="loginPassword">Contraseña</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required/>
+      </div>
+      <button class="btn primary full" type="submit">Entrar</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </section>
+
+  <header class="admin-topbar">
+    <a class="brand" href="index.html">
+      <img src="imagenes/WhatsApp Image 2026-02-23 at 14.57.51.jpeg" alt="Infinit Flores"/>
+      <span>
+        <strong>Panel WISP</strong>
+        <small>MikroTik + clientes</small>
+      </span>
+    </a>
+    <div class="admin-top-actions">
+      <span class="bridge-state" id="bridgeState"><i class="fas fa-circle"></i> Modo preparacion</span>
+      <div class="tools-menu">
+        <button class="icon-menu-btn" type="button" id="toolsMenuBtn" aria-label="Funciones">
+          <i class="fas fa-ellipsis-vertical"></i>
+        </button>
+        <div class="tools-dropdown" id="toolsDropdown">
+          <button class="tool-item" type="button" id="newClientBtn"><i class="fas fa-user-plus"></i> Nuevo cliente</button>
+          <button class="tool-item" type="button" id="syncMikrotikBtn"><i class="fas fa-router"></i> Sincronizar MikroTik</button>
+          <button class="tool-item" type="button" id="setThirtyDaysBtn"><i class="fas fa-calendar-check"></i> 30 dias a todos</button>
+          <button class="tool-item" type="button" id="exportBtn"><i class="fas fa-file-export"></i> Exportar datos</button>
+          <button class="tool-item danger" type="button" id="clearPanelBtn"><i class="fas fa-broom"></i> Limpiar panel</button>
+        </div>
+      </div>
+      <button class="btn ghost" type="button" id="logoutBtn"><i class="fas fa-right-from-bracket"></i> Salir</button>
+      <a class="btn ghost" href="index.html"><i class="fas fa-globe"></i> Pagina</a>
+    </div>
+  </header>
+
+  <main class="admin-app">
+    <section class="admin-stats" aria-label="Resumen de clientes">
+      <article>
+        <span>Clientes</span>
+        <strong id="statTotal">0</strong>
+        <small>registrados</small>
+      </article>
+      <article>
+        <span>Activos</span>
+        <strong id="statActive">0</strong>
+        <small>con servicio</small>
+      </article>
+      <article>
+        <span>Vencidos</span>
+        <strong id="statExpired">0</strong>
+        <small>corte automatico</small>
+      </article>
+      <article>
+        <span>Cortados</span>
+        <strong id="statCut">0</strong>
+        <small>sin servicio</small>
+      </article>
+      <article>
+        <span>Ganancia mes</span>
+        <strong id="statRevenue">Bs. 0</strong>
+        <small>recargas registradas</small>
+      </article>
+    </section>
+
+    <section class="income-panel">
+      <div>
+        <h2>Ganancias por recarga</h2>
+        <p>Resumen mensual basado en pagos registrados desde el panel.</p>
+      </div>
+      <div class="income-controls">
+        <select id="incomeYearFilter" aria-label="Ano de ganancias">
+          <option value="todos">Todos los anos</option>
+        </select>
+        <select id="incomeMonthFilter" aria-label="Mes de ganancias">
+          <option value="todos">Todos los meses</option>
+          <option value="01">Enero</option>
+          <option value="02">Febrero</option>
+          <option value="03">Marzo</option>
+          <option value="04">Abril</option>
+          <option value="05">Mayo</option>
+          <option value="06">Junio</option>
+          <option value="07">Julio</option>
+          <option value="08">Agosto</option>
+          <option value="09">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+        <button class="mini-btn" type="button" id="incomeViewBtn"><i class="fas fa-chart-column"></i> Ver grafico</button>
+      </div>
+      <div class="income-grid" id="incomeGrid"></div>
+    </section>
+
+    <section class="admin-panel">
+      <div class="panel-head">
+        <div>
+          <h2>Clientes</h2>
+          <p>Busca por nombre, CI, usuario PPPoE, IP, sector o telefono.</p>
+        </div>
+        <div class="filters">
+          <input id="searchInput" type="search" placeholder="Buscar cliente..."/>
+          <select id="sectorFilter">
+            <option value="todos">Todos los sectores</option>
+            <option value="fibra">Fibra optica</option>
+            <option value="inalambrico">Inalambrico</option>
+          </select>
+          <select id="statusFilter">
+            <option value="todos">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="vencido">Vencido</option>
+            <option value="cortado">Cortado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="client-layout">
+        <div class="client-table-wrap">
+          <table class="client-table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Servicio</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTbody"></tbody>
+          </table>
+        </div>
+
+        <aside class="client-detail" id="clientDetail">
+          <div class="empty-detail">
+            <i class="fas fa-user-check"></i>
+            <strong>Selecciona un cliente</strong>
+            <span>Veras sus datos, historial de pagos y comandos preparados para MikroTik.</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="client-dialog" id="clientDialog">
+    <form method="dialog" class="client-form" id="clientForm">
+      <div class="dialog-head">
+        <h3 id="dialogTitle">Nuevo cliente</h3>
+        <button type="button" id="closeDialogBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <input type="hidden" id="clientId"/>
+      <div class="form-split">
+        <div class="form-row">
+          <label for="clientName">Nombre</label>
+          <input id="clientName" required/>
+        </div>
+        <div class="form-row">
+          <label for="clientCi">CI</label>
+          <input id="clientCi" required/>
+        </div>
+      </div>
+      <div class="form-split">
+        <div class="form-row">
+          <label for="clientPhone">Telefono</label>
+          <input id="clientPhone"/>
+        </div>
+        <div class="form-row">
+          <label for="clientSector">Sector</label>
+          <select id="clientSector">
+            <option value="fibra">Fibra optica</option>
+            <option value="inalambrico">Inalambrico</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-split">
+        <div class="form-row">
+          <label for="clientPlan">Plan</label>
+          <select id="clientPlan">
+            <option value="7 Mbps">7 Mbps - Bs. 95</option>
+            <option value="10 Mbps">10 Mbps - Bs. 120</option>
+            <option value="20 Mbps">20 Mbps - Bs. 150</option>
+            <option value="20 Mbps + Canales">20 Mbps + Canales - Bs. 160</option>
+            <option value="40 Mbps + Canales">40 Mbps + Canales - Bs. 200</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="clientPrice">Monto mensual</label>
+          <input id="clientPrice" type="number" min="0" step="1" required/>
+        </div>
+      </div>
+      <div class="form-split">
+        <div class="form-row">
+          <label for="clientPppoe">Usuario PPPoE</label>
+          <input id="clientPppoe" placeholder="cliente001"/>
+        </div>
+        <div class="form-row">
+          <label for="clientQueue">Queue simple</label>
+          <input id="clientQueue" placeholder="cliente001"/>
+        </div>
+      </div>
+      <div class="form-split">
+        <div class="form-row">
+          <label for="clientIp">IP / direccion</label>
+          <input id="clientIp" placeholder="10.10.10.2"/>
+        </div>
+        <div class="form-row">
+          <label for="clientPaidUntil">Pagado hasta</label>
+          <input id="clientPaidUntil" type="date" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="clientDueAt">Corte programado</label>
+        <input id="clientDueAt" type="datetime-local"/>
+      </div>
+      <label class="check-row" for="clientAutoCut">
+        <input id="clientAutoCut" type="checkbox"/>
+        <span>Cortar automaticamente cuando venza</span>
+      </label>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="cancelClientBtn">Cancelar</button>
+        <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar cliente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="admin.js"></script>
+</body>
+</html>

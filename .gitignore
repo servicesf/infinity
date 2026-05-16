@@ -1,0 +1,5 @@
+.env
+bridge/.env
+bridge/clients-store.json
+.vercel
+node_modules
