@@ -154,6 +154,10 @@ button, input, select, textarea { font: inherit; }
   color: #fff;
 }
 .btn.full { width: 100%; }
+.btn.disabled {
+  pointer-events: none;
+  opacity: 0.72;
+}
 
 .menu-btn {
   display: none;
@@ -788,8 +792,7 @@ main {
 }
 
 .plan-body {
-  padding: 16px 16px 18px;
-  border-top: 1px solid #ededed;
+  padding: 18px 16px;
 }
 
 .plan-service {
