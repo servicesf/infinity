@@ -12,29 +12,34 @@
     },
     "planes": [
       {
-        "nombre": "7 Mbps",
-        "precio": "95 Bs/mes",
-        "ideal_para": "2-3 personas, uso básico, redes sociales y navegación"
-      },
-      {
         "nombre": "10 Mbps",
+        "precio": "95 Bs/mes",
+        "ideal_para": "Plan básico agotado temporalmente"
+      },
+      {
+        "nombre": "25 Mbps",
         "precio": "120 Bs/mes",
-        "ideal_para": "4-5 personas, streaming y uso diario"
+        "ideal_para": "Estudio, video y redes sociales"
       },
       {
-        "nombre": "20 Mbps",
+        "nombre": "50 Mbps",
         "precio": "150 Bs/mes",
-        "ideal_para": "6-7 personas, streaming en HD y múltiples dispositivos"
+        "ideal_para": "Familias con varios dispositivos y streaming"
       },
       {
-        "nombre": "20 Mbps + Canales",
+        "nombre": "50 Mbps + 2000 canales, peliculas y series",
         "precio": "160 Bs/mes",
         "ideal_para": "Familias que quieren internet y televisión"
       },
       {
-        "nombre": "40 Mbps + Canales",
+        "nombre": "100 Mbps",
         "precio": "200 Bs/mes",
-        "ideal_para": "Casas grandes, streaming 4K y muchos dispositivos"
+        "ideal_para": "Casas con muchos equipos y streaming HD"
+      },
+      {
+        "nombre": "200 Mbps",
+        "precio": "300 Bs/mes",
+        "ideal_para": "Streaming 4K, trabajo pesado y alto rendimiento"
       }
     ]
   },

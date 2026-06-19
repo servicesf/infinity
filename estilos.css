@@ -725,8 +725,9 @@ main {
 }
 
 .plans-grid {
-  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
   align-items: start;
+  gap: 14px;
 }
 
 .plan-card {
@@ -745,11 +746,25 @@ main {
   box-shadow: 0 18px 50px rgba(0, 51, 160, 0.14);
 }
 
+.plan-card.sold-out {
+  background: #fbfdff;
+}
+
+.plan-card.sold-out .plan-body {
+  opacity: 0.82;
+}
+
+.plan-card.sold-out .offer-badges span {
+  color: #b42318;
+  background: #ffe9e7;
+  border-color: #ffc8c1;
+}
+
 .recommended {
   position: absolute;
-  top: 18px;
-  right: 18px;
-  padding: 5px 10px;
+  top: 12px;
+  right: 12px;
+  padding: 4px 9px;
   border-radius: 999px;
   color: #fff;
   background: linear-gradient(135deg, #43bd22, var(--green));
@@ -761,11 +776,11 @@ main {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px;
+  padding: 13px 16px;
   color: #003cff;
   font-weight: 900;
   text-decoration: underline;
-  font-size: 1.04rem;
+  font-size: 0.95rem;
 }
 
 .plan-detail.bottom {
@@ -773,40 +788,40 @@ main {
 }
 
 .plan-body {
-  padding: 22px 20px 28px;
+  padding: 16px 16px 18px;
   border-top: 1px solid #ededed;
 }
 
 .plan-service {
   display: block;
   color: var(--ink);
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 500;
 }
 
 .plan-card h3 {
   min-height: 0;
   margin-top: 2px;
-  font-size: 1.7rem;
+  font-size: 1.45rem;
   line-height: 1.05;
   color: #062678;
 }
 
 .plan-card p {
-  min-height: 48px;
-  margin-top: 8px;
-  font-size: 1rem;
+  min-height: 40px;
+  margin-top: 6px;
+  font-size: 0.92rem;
 }
 
 .offer-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .offer-badges span {
-  min-height: 24px;
+  min-height: 22px;
   display: inline-flex;
   align-items: center;
   padding: 0 10px;
@@ -814,7 +829,7 @@ main {
   color: #001c15;
   background: #63efbd;
   border: 1px solid #23c993;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 900;
 }
 
@@ -822,7 +837,7 @@ main {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  margin: 14px 0 4px;
+  margin: 10px 0 2px;
 }
 
 .plan-price strong {
@@ -830,21 +845,21 @@ main {
   -webkit-background-clip: initial;
   background-clip: initial;
   color: #003cff;
-  font-size: 2.05rem;
+  font-size: 1.72rem;
   line-height: 1;
 }
 
 .plan-price span {
   color: #003cff;
-  font-size: 1.1rem;
+  font-size: 0.98rem;
   font-weight: 800;
 }
 
 .plan-body .btn {
-  min-height: 62px;
-  margin-top: 20px;
+  min-height: 48px;
+  margin-top: 12px;
   border-radius: 999px;
-  font-size: 1.08rem;
+  font-size: 0.98rem;
 }
 
 .feature-panel {
