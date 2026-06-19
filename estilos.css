@@ -880,6 +880,60 @@ main {
   color: #062678;
 }
 
+.charges-panel {
+  margin-top: 18px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.charges-panel h2 {
+  color: #062678;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.charges-list {
+  display: grid;
+}
+
+.charge-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.charge-row i {
+  color: #ff6500;
+  font-size: 1rem;
+}
+
+.charge-row span {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.charge-row strong {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.charges-panel p {
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 12px;
+}
+
 .terms-panel {
   margin-top: 18px;
   padding: 22px;
@@ -1757,6 +1811,15 @@ main {
     height: 54px;
     border-radius: 16px;
     font-size: 1.45rem;
+  }
+
+  .charge-row {
+    grid-template-columns: 22px 1fr;
+    gap: 10px;
+  }
+
+  .charge-row strong {
+    grid-column: 2;
   }
 
   .plan-card h3 {
