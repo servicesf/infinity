@@ -880,6 +880,35 @@ main {
   color: #062678;
 }
 
+.terms-panel {
+  margin-top: 18px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.terms-panel h2 {
+  color: #062678;
+  font-size: 1.35rem;
+  margin-bottom: 12px;
+}
+
+.terms-panel ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 22px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.terms-panel li::marker {
+  color: var(--blue);
+}
+
 .product-grid {
   grid-template-columns: repeat(4, 1fr);
 }
@@ -1689,6 +1718,7 @@ main {
   .service-grid,
   .contact-grid,
   .receipt-grid,
+  .terms-panel ul,
   .form-split,
   .method-grid {
     grid-template-columns: 1fr;
