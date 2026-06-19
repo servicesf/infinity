@@ -1,0 +1,47 @@
+[
+  {
+    "id": "hgw-te-verde",
+    "categoria": "hgw",
+    "marca": "HGW",
+    "nombre": "Te verde antioxidante",
+    "descripcion": "Producto Health Green World para pedido por catalogo.",
+    "precio": 120,
+    "imagen": "imagenes/ChatGPT Image 23 feb 2026, 14_23_10.png"
+  },
+  {
+    "id": "hgw-suplemento",
+    "categoria": "hgw",
+    "marca": "HGW",
+    "nombre": "Suplemento natural",
+    "descripcion": "Producto HGW con descuento disponible por pedido.",
+    "precio": 180,
+    "imagen": "imagenes/ChatGPT Image 23 feb 2026, 14_23_02.png"
+  },
+  {
+    "id": "cafini-tvbox",
+    "categoria": "cafini",
+    "marca": "Cafini",
+    "nombre": "TV Box Android 4K",
+    "descripcion": "Equipo Android para streaming, TV y aplicaciones.",
+    "precio": 280,
+    "imagen": "imagenes/magis.png"
+  },
+  {
+    "id": "lidimi-audifono",
+    "categoria": "lidimi",
+    "marca": "Lidimi",
+    "nombre": "Audifonos Bluetooth",
+    "descripcion": "Audifonos inalambricos para uso diario.",
+    "precio": 85,
+    "imagen": "imagenes/smartiptv.jpg"
+  },
+  {
+    "id": "sanci-cargador",
+    "categoria": "sanci",
+    "marca": "Sanci",
+    "nombre": "Cargador rapido",
+    "descripcion": "Cargador para telefono con cable incluido.",
+    "precio": 65,
+    "imagen": "imagenes/4935c5232684beb220190130202528000000.jpeg"
+  }
+]

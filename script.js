@@ -2,6 +2,7 @@ const menuBtn = document.getElementById('menuBtn');
 const navShell = document.getElementById('navShell');
 const pageLinks = document.querySelectorAll('[data-page-link]');
 const pages = document.querySelectorAll('.app-page');
+const WHATSAPP_NUMBER = '59167236144';
 
 function showPage(pageName) {
   const target = document.querySelector(`[data-page="${pageName}"]`) ? pageName : 'inicio';
@@ -26,6 +27,16 @@ pageLinks.forEach(link => {
     history.pushState(null, '', `#${target}`);
     showPage(target);
   });
+});
+
+document.addEventListener('click', event => {
+  const link = event.target.closest('[data-page-link]');
+  if (!link || [...pageLinks].includes(link)) return;
+  const target = link.dataset.pageLink;
+  if (!target) return;
+  event.preventDefault();
+  history.pushState(null, '', `#${target}`);
+  showPage(target);
 });
 
 window.addEventListener('popstate', () => {
@@ -163,7 +174,7 @@ function enviarPago(event) {
   formOk?.classList.add('show');
 
   setTimeout(() => {
-    window.open(`https://wa.me/59167236144?text=${encodeURIComponent(mensaje)}`, '_blank');
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`, '_blank');
     document.getElementById('pagoForm')?.reset();
     actualizarMetodoInfo();
     setTimeout(() => formOk?.classList.remove('show'), 2500);
@@ -239,6 +250,256 @@ async function enviarMensajeChat(event) {
 if (chatForm) {
   chatForm.addEventListener('submit', enviarMensajeChat);
 }
+
+const demoCustomers = [
+  {
+    ci: '12345678',
+    nombre: 'Cliente demo',
+    plan: 'Fibra 20 Mbps',
+    precio: 150,
+    estado: 'activo',
+    pagadoHasta: '2026-07-18T18:00:00',
+    ultimosPagos: [
+      { fecha: '2026-06-18', monto: 150, metodo: 'QR Bancario' },
+      { fecha: '2026-05-18', monto: 150, metodo: 'Efectivo' }
+    ]
+  }
+];
+
+function remainingServiceTime(dateValue) {
+  const end = new Date(dateValue);
+  const diff = end - new Date();
+  if (Number.isNaN(end.getTime())) return 'Sin fecha';
+  if (diff <= 0) return 'Vencido';
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  return `${days} dias ${hours} horas`;
+}
+
+function renderCustomer(customer) {
+  const target = document.getElementById('customerResult');
+  if (!target) return;
+
+  if (!customer) {
+    target.innerHTML = `
+      <div class="empty-state danger">
+        <i class="fas fa-circle-exclamation"></i>
+        <strong>No encontramos ese carnet</strong>
+        <span>Verifica el dato o consulta por WhatsApp.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const payments = customer.ultimosPagos || [];
+  target.innerHTML = `
+    <div class="receipt-card">
+      <div class="receipt-head">
+        <div>
+          <span>Recibo de servicio</span>
+          <h2>${customer.nombre}</h2>
+        </div>
+        <strong class="status-chip ${customer.estado}">${customer.estado}</strong>
+      </div>
+      <div class="receipt-grid">
+        <div><span>Plan</span><strong>${customer.plan}</strong></div>
+        <div><span>Mensualidad</span><strong>Bs. ${customer.precio}</strong></div>
+        <div><span>Restante</span><strong>${remainingServiceTime(customer.pagadoHasta)}</strong></div>
+        <div><span>Corte</span><strong>${new Date(customer.pagadoHasta).toLocaleString('es-BO')}</strong></div>
+      </div>
+      <h3>Ultimos pagos</h3>
+      <div class="mini-history">
+        ${payments.length ? payments.map(payment => `
+          <div><span>${payment.fecha} · ${payment.metodo}</span><strong>Bs. ${payment.monto}</strong></div>
+        `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
+      </div>
+      <a class="btn primary full" href="#pagos" data-page-link="pagos"><i class="fas fa-qrcode"></i> Pagar servicio</a>
+    </div>
+  `;
+}
+
+document.getElementById('clientLookupForm')?.addEventListener('submit', event => {
+  event.preventDefault();
+  const ci = document.getElementById('lookupCi')?.value.trim();
+  const customer = demoCustomers.find(item => item.ci === ci);
+  renderCustomer(customer);
+});
+
+const cart = {
+  items: [],
+  coupon: null
+};
+let products = [];
+let activeShopFilter = 'todos';
+
+const coupons = {
+  INFINIT10: { type: 'percent', value: 10 },
+  HGW20: { type: 'percent', value: 20, category: 'hgw' }
+};
+
+function money(value) {
+  return `Bs. ${Number(value || 0).toFixed(0)}`;
+}
+
+function filteredProducts() {
+  return activeShopFilter === 'todos'
+    ? products
+    : products.filter(product => product.categoria === activeShopFilter);
+}
+
+function renderProducts() {
+  const grid = document.getElementById('storeGrid');
+  if (!grid) return;
+
+  grid.innerHTML = filteredProducts().map(product => `
+    <article class="store-card">
+      <img src="${product.imagen}" alt="${product.nombre}"/>
+      <span>${product.marca}</span>
+      <h3>${product.nombre}</h3>
+      <p>${product.descripcion}</p>
+      <strong>${money(product.precio)}</strong>
+      <button class="btn primary full" type="button" data-add-product="${product.id}">
+        <i class="fas fa-cart-plus"></i> Agregar
+      </button>
+    </article>
+  `).join('');
+}
+
+function cartSubtotal() {
+  return cart.items.reduce((total, item) => total + item.precio * item.qty, 0);
+}
+
+function cartDiscount() {
+  if (!cart.coupon) return 0;
+  const coupon = coupons[cart.coupon];
+  if (!coupon) return 0;
+  const base = cart.items.reduce((total, item) => {
+    if (coupon.category && item.categoria !== coupon.category) return total;
+    return total + item.precio * item.qty;
+  }, 0);
+  return coupon.type === 'percent' ? Math.round(base * coupon.value / 100) : coupon.value;
+}
+
+function renderCart() {
+  const itemsBox = document.getElementById('cartItems');
+  const count = document.getElementById('cartCount');
+  const subtotalEl = document.getElementById('cartSubtotal');
+  const discountEl = document.getElementById('cartDiscount');
+  const totalEl = document.getElementById('cartTotal');
+  if (!itemsBox) return;
+
+  const subtotal = cartSubtotal();
+  const discount = cartDiscount();
+  const total = Math.max(subtotal - discount, 0);
+  const totalItems = cart.items.reduce((sum, item) => sum + item.qty, 0);
+
+  count.textContent = `${totalItems} item${totalItems === 1 ? '' : 's'}`;
+  subtotalEl.textContent = money(subtotal);
+  discountEl.textContent = money(discount);
+  totalEl.textContent = money(total);
+
+  itemsBox.innerHTML = cart.items.length ? cart.items.map(item => `
+    <div class="cart-item">
+      <div>
+        <strong>${item.nombre}</strong>
+        <span>${item.qty} x ${money(item.precio)}</span>
+      </div>
+      <div class="qty-actions">
+        <button type="button" data-cart-minus="${item.id}">-</button>
+        <button type="button" data-cart-plus="${item.id}">+</button>
+      </div>
+    </div>
+  `).join('') : '<span class="muted">Tu carrito esta vacio.</span>';
+}
+
+function addToCart(productId) {
+  const product = products.find(item => item.id === productId);
+  if (!product) return;
+  const current = cart.items.find(item => item.id === productId);
+  if (current) {
+    current.qty += 1;
+  } else {
+    cart.items.push({ ...product, qty: 1 });
+  }
+  renderCart();
+}
+
+function changeCartQty(productId, delta) {
+  const item = cart.items.find(product => product.id === productId);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart.items = cart.items.filter(product => product.id !== productId);
+  renderCart();
+}
+
+async function loadProducts() {
+  try {
+    const response = await fetch('data/productos.json');
+    products = await response.json();
+  } catch {
+    products = [];
+  }
+  renderProducts();
+  renderCart();
+}
+
+document.getElementById('shopFilters')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-shop-filter]');
+  if (!button) return;
+  activeShopFilter = button.dataset.shopFilter;
+  document.querySelectorAll('[data-shop-filter]').forEach(item => {
+    item.classList.toggle('active', item === button);
+  });
+  renderProducts();
+});
+
+document.getElementById('storeGrid')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-add-product]');
+  if (button) addToCart(button.dataset.addProduct);
+});
+
+document.getElementById('cartItems')?.addEventListener('click', event => {
+  const plus = event.target.closest('[data-cart-plus]');
+  const minus = event.target.closest('[data-cart-minus]');
+  if (plus) changeCartQty(plus.dataset.cartPlus, 1);
+  if (minus) changeCartQty(minus.dataset.cartMinus, -1);
+});
+
+document.getElementById('applyCouponBtn')?.addEventListener('click', () => {
+  const code = document.getElementById('couponInput')?.value.trim().toUpperCase();
+  if (!code || !coupons[code]) {
+    alert('Cupon no valido.');
+    return;
+  }
+  cart.coupon = code;
+  renderCart();
+});
+
+document.getElementById('sendCartBtn')?.addEventListener('click', () => {
+  if (!cart.items.length) {
+    alert('Agrega productos al carrito.');
+    return;
+  }
+  const subtotal = cartSubtotal();
+  const discount = cartDiscount();
+  const total = Math.max(subtotal - discount, 0);
+  const lines = cart.items.map(item => `- ${item.nombre} x${item.qty}: ${money(item.precio * item.qty)}`);
+  const message = [
+    '*PEDIDO TIENDA INFINIT*',
+    '',
+    ...lines,
+    '',
+    `Subtotal: ${money(subtotal)}`,
+    cart.coupon ? `Cupon: ${cart.coupon}` : '',
+    `Descuento: ${money(discount)}`,
+    `Total: ${money(total)}`,
+    '',
+    'Quiero confirmar disponibilidad y forma de pago.'
+  ].filter(Boolean).join('\n');
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank');
+});
+
+loadProducts();
 
 function toggleChatWidget(forceOpen = null) {
   if (!chatWidget) return;

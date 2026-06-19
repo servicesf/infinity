@@ -25,6 +25,8 @@
         <a href="#internet" data-page-link="internet">Internet hogar</a>
         <a href="#tv" data-page-link="tv">TV y streaming</a>
         <a href="#pagos" data-page-link="pagos">Pagar</a>
+        <a href="#cliente" data-page-link="cliente">Mi servicio</a>
+        <a href="#tienda" data-page-link="tienda">Tienda</a>
         <a href="#servicios" data-page-link="servicios">Servicios</a>
         <a href="#contacto" data-page-link="contacto">Ayuda</a>
       </nav>
@@ -102,6 +104,14 @@
           <a href="#servicios" data-page-link="servicios" class="welcome-item">
             <div class="welcome-icon"><i class="fas fa-leaf"></i></div>
             <h3>Productos HGW</h3>
+          </a>
+          <a href="#cliente" data-page-link="cliente" class="welcome-item">
+            <div class="welcome-icon"><i class="fas fa-file-invoice"></i></div>
+            <h3>Mi servicio</h3>
+          </a>
+          <a href="#tienda" data-page-link="tienda" class="welcome-item">
+            <div class="welcome-icon"><i class="fas fa-cart-shopping"></i></div>
+            <h3>Tienda</h3>
           </a>
         </div>
       </section>
@@ -379,6 +389,77 @@
           <p>Suplementos y productos con 20% de descuento.</p>
           <a href="https://www.healthgreenworld.com/?userName=cipriano74" target="_blank" rel="noopener">Ver catalogo</a>
         </article>
+      </div>
+    </section>
+
+    <section class="app-page" id="page-cliente" data-page="cliente">
+      <section class="page-hero small">
+        <div>
+          <span class="label-pill">Portal cliente</span>
+          <h1>Consulta tu servicio con tu carnet.</h1>
+          <p>Revisa tu plan, pago, dias restantes y solicita tu recibo.</p>
+        </div>
+      </section>
+
+      <div class="client-portal">
+        <form class="lookup-card" id="clientLookupForm">
+          <div class="form-row">
+            <label for="lookupCi">Carnet de identidad</label>
+            <input id="lookupCi" type="text" placeholder="Ejemplo: 12345678" required/>
+          </div>
+          <button class="btn primary full" type="submit"><i class="fas fa-magnifying-glass"></i> Consultar</button>
+          <small>Luego conectaremos esta consulta a Supabase para que muestre datos reales.</small>
+        </form>
+
+        <aside class="customer-result" id="customerResult">
+          <div class="empty-state">
+            <i class="fas fa-id-card"></i>
+            <strong>Ingresa tu carnet</strong>
+            <span>Aqui aparecera tu plan, vencimiento y recibos.</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="app-page" id="page-tienda" data-page="tienda">
+      <section class="page-hero small">
+        <div>
+          <span class="label-pill">Tienda</span>
+          <h1>Productos HGW, Cafini, Lidimi y mas.</h1>
+          <p>Agrega productos al carrito, aplica cupones y envia tu pedido por WhatsApp.</p>
+        </div>
+      </section>
+
+      <div class="shop-layout">
+        <section class="shop-main">
+          <div class="shop-filters" id="shopFilters">
+            <button class="active" type="button" data-shop-filter="todos">Todos</button>
+            <button type="button" data-shop-filter="hgw">HGW</button>
+            <button type="button" data-shop-filter="cafini">Cafini</button>
+            <button type="button" data-shop-filter="lidimi">Lidimi</button>
+            <button type="button" data-shop-filter="sanci">Sanci</button>
+          </div>
+          <div class="store-grid" id="storeGrid"></div>
+        </section>
+
+        <aside class="cart-panel">
+          <div class="cart-head">
+            <h2>Carrito</h2>
+            <span id="cartCount">0 items</span>
+          </div>
+          <div class="cart-items" id="cartItems"></div>
+          <div class="coupon-row">
+            <input id="couponInput" type="text" placeholder="Cupon"/>
+            <button class="mini-action" type="button" id="applyCouponBtn">Aplicar</button>
+          </div>
+          <div class="cart-totals">
+            <div><span>Subtotal</span><strong id="cartSubtotal">Bs. 0</strong></div>
+            <div><span>Descuento</span><strong id="cartDiscount">Bs. 0</strong></div>
+            <div class="total"><span>Total</span><strong id="cartTotal">Bs. 0</strong></div>
+          </div>
+          <button class="btn primary full" type="button" id="sendCartBtn"><i class="fab fa-whatsapp"></i> Enviar pedido</button>
+          <small>Cupon inicial: INFINIT10</small>
+        </aside>
       </div>
     </section>
 
