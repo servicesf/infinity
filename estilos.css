@@ -959,9 +959,18 @@ main {
 
 .plan-service {
   display: block;
+  max-width: calc(100% - 148px);
+  min-height: 22px;
   color: var(--ink);
   font-size: 0.92rem;
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.has-stacked-badges .plan-service {
+  max-width: calc(100% - 160px);
 }
 
 .plan-card h3 {
@@ -981,12 +990,12 @@ main {
 
 .offer-badges {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 46px;
+  right: 16px;
   display: flex;
   align-items: flex-end;
   gap: 3px;
-  max-width: calc(100% - 20px);
+  max-width: calc(100% - 32px);
   z-index: 2;
   pointer-events: none;
 }
@@ -2092,9 +2101,9 @@ main {
   }
 
   .offer-badges {
-    top: 9px;
-    right: 9px;
-    max-width: 54%;
+    top: 46px;
+    right: 12px;
+    max-width: 52%;
   }
 
   .offer-badges span,
