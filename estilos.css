@@ -907,17 +907,32 @@ main {
 }
 
 .plan-card.sold-out {
-  background: #fbfdff;
+  background: #f4f7fa;
+  border-color: #d9e1e8;
+  box-shadow: none;
 }
 
 .plan-card.sold-out .plan-body {
-  opacity: 0.82;
+  opacity: 0.78;
 }
 
 .plan-card.sold-out .offer-badges span {
   color: #b42318;
   background: #ffe9e7;
   border-color: #ffc8c1;
+}
+
+.plan-card.sold-out .plan-price strong,
+.plan-card.sold-out .plan-price span,
+.plan-card.sold-out h3 {
+  color: #627386;
+}
+
+.plan-card.sold-out .btn.disabled {
+  color: #6b7280;
+  background: #d9e1e8;
+  box-shadow: none;
+  cursor: not-allowed;
 }
 
 .plan-detail {
@@ -937,6 +952,10 @@ main {
 
 .plan-body {
   padding: 46px 16px 18px;
+}
+
+.has-stacked-badges .plan-body {
+  padding-top: 58px;
 }
 
 .plan-service {
@@ -965,20 +984,37 @@ main {
   top: 12px;
   right: 12px;
   display: flex;
+  align-items: flex-end;
+  gap: 4px;
 }
 
-.offer-badges span {
+.offer-badges.stacked {
+  flex-direction: column;
+}
+
+.offer-badges span,
+.offer-badges small {
   min-height: 26px;
   display: inline-flex;
   align-items: center;
   padding: 0 11px;
   border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.offer-badges span {
   color: #fff;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   border: 0;
   box-shadow: 0 10px 22px rgba(0, 93, 255, 0.18);
-  font-size: 0.74rem;
-  font-weight: 900;
+}
+
+.offer-badges small {
+  color: #075985;
+  background: #e8f8ff;
+  border: 1px solid rgba(0, 170, 255, 0.24);
+  box-shadow: 0 8px 18px rgba(0, 93, 255, 0.08);
 }
 
 .plan-price {
@@ -1005,21 +1041,6 @@ main {
 
 .plan-price.quote strong {
   font-size: 1.55rem;
-}
-
-.equipment-tag {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  min-height: 24px;
-  margin: 5px 0 2px;
-  padding: 0 10px;
-  border-radius: 999px;
-  color: #075985;
-  background: #e8f8ff;
-  border: 1px solid rgba(0, 170, 255, 0.24);
-  font-size: 0.76rem;
-  font-weight: 900;
 }
 
 .plan-body .btn {
