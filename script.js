@@ -4,6 +4,13 @@ const pageLinks = document.querySelectorAll('[data-page-link]');
 const pages = document.querySelectorAll('.app-page');
 const WHATSAPP_NUMBER = '59167236144';
 
+function localApiUrl(path) {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return ['127.0.0.1', 'localhost'].includes(window.location.hostname)
+    ? `https://infinity-black-rho.vercel.app${cleanPath}`
+    : cleanPath;
+}
+
 function showPage(pageName) {
   const target = document.querySelector(`[data-page="${pageName}"]`) ? pageName : 'inicio';
 
@@ -302,6 +309,36 @@ function remainingServiceTime(dateValue) {
   return `${days} dias ${hours} horas`;
 }
 
+function formatDateTime(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return 'Sin fecha';
+  return date.toLocaleString('es-BO', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
+}
+
+function customerMessage(customer) {
+  const remaining = remainingServiceTime(customer.pagadoHasta);
+  if (remaining === 'Vencido') {
+    return 'Tu servicio esta vencido. Puedes pagar con QR para reactivar tu conexion.';
+  }
+  if (customer.estado === 'cortado') {
+    return 'Tu servicio esta cortado. Realiza tu pago y la activacion quedara en proceso.';
+  }
+  return `Tu servicio esta activo. Te quedan ${remaining}. Gracias por estar conectado con Infinit.`;
+}
+
 function renderCustomer(customer) {
   const target = document.getElementById('customerResult');
   if (!target) return;
@@ -318,28 +355,36 @@ function renderCustomer(customer) {
   }
 
   const payments = customer.ultimosPagos || [];
+  const estado = escapeHtml(customer.estado || '');
   target.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-head">
         <div>
-          <span>Recibo de servicio</span>
-          <h2>${customer.nombre}</h2>
+          <span>Mi servicio de fibra</span>
+          <h2>${escapeHtml(customer.nombre)}</h2>
         </div>
-        <strong class="status-chip ${customer.estado}">${customer.estado}</strong>
+        <strong class="status-chip ${estado}">${estado}</strong>
+      </div>
+      <div class="service-message">
+        <i class="fas fa-wifi"></i>
+        <span>${escapeHtml(customerMessage(customer))}</span>
       </div>
       <div class="receipt-grid">
-        <div><span>Plan</span><strong>${customer.plan}</strong></div>
-        <div><span>Mensualidad</span><strong>Bs. ${customer.precio}</strong></div>
+        <div><span>Plan</span><strong>${escapeHtml(customer.plan)}</strong></div>
+        <div><span>Mensualidad</span><strong>Bs. ${escapeHtml(customer.precio)}</strong></div>
         <div><span>Restante</span><strong>${remainingServiceTime(customer.pagadoHasta)}</strong></div>
-        <div><span>Corte</span><strong>${new Date(customer.pagadoHasta).toLocaleString('es-BO')}</strong></div>
+        <div><span>Corte</span><strong>${formatDateTime(customer.pagadoHasta)}</strong></div>
       </div>
       <h3>Ultimos pagos</h3>
       <div class="mini-history">
         ${payments.length ? payments.map(payment => `
-          <div><span>${payment.fecha} · ${payment.metodo}</span><strong>Bs. ${payment.monto}</strong></div>
+          <div><span>${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}</span><strong>Bs. ${escapeHtml(payment.monto)}</strong></div>
         `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
-      <a class="btn primary full" href="#pagos" data-page-link="pagos"><i class="fas fa-qrcode"></i> Pagar servicio</a>
+      <button class="btn primary full" type="button" data-pay-customer="${escapeHtml(customer.id || customer.ci)}">
+        <i class="fas fa-qrcode"></i> Pagar ahora con QR
+      </button>
+      <div class="qr-result" id="qrResult"></div>
     </div>
   `;
 }
@@ -347,8 +392,82 @@ function renderCustomer(customer) {
 document.getElementById('clientLookupForm')?.addEventListener('submit', event => {
   event.preventDefault();
   const ci = document.getElementById('lookupCi')?.value.trim();
-  const customer = demoCustomers.find(item => item.ci === ci);
-  renderCustomer(customer);
+  lookupCustomer(ci);
+});
+
+async function lookupCustomer(ci) {
+  const target = document.getElementById('customerResult');
+  if (!target) return;
+
+  target.innerHTML = `
+    <div class="empty-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <strong>Consultando servicio</strong>
+      <span>Estamos revisando tus datos.</span>
+    </div>
+  `;
+
+  try {
+    const response = await fetch(localApiUrl(`/api/customer?ci=${encodeURIComponent(ci)}`));
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const fallback = demoCustomers.find(item => item.ci === ci);
+      if (fallback) return renderCustomer(fallback);
+      throw new Error(data?.error || 'No se pudo consultar el servicio.');
+    }
+
+    renderCustomer(data.customer);
+  } catch (error) {
+    target.innerHTML = `
+      <div class="empty-state danger">
+        <i class="fas fa-circle-exclamation"></i>
+        <strong>No pudimos consultar ahora</strong>
+        <span>${error.message}</span>
+      </div>
+    `;
+  }
+}
+
+document.addEventListener('click', async event => {
+  const button = event.target.closest('[data-pay-customer]');
+  if (!button) return;
+
+  const qrTarget = document.getElementById('qrResult');
+  const customerId = button.dataset.payCustomer;
+  if (!qrTarget || !customerId) return;
+
+  button.disabled = true;
+  qrTarget.innerHTML = '<div class="qr-box"><strong>Generando QR...</strong><span>Un momento por favor.</span></div>';
+
+  try {
+    const response = await fetch(localApiUrl('/api/qr-create'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data?.error || 'No se pudo generar el QR.');
+
+    const qr = data.qr || {};
+    qrTarget.innerHTML = `
+      <div class="qr-box">
+        <strong>Pago QR Bs. ${Number(data.amount || 0).toFixed(0)}</strong>
+        ${qr.qrImage ? `<img src="${escapeHtml(qr.qrImage)}" alt="QR de pago"/>` : ''}
+        ${qr.qrText ? `<code>${escapeHtml(qr.qrText)}</code>` : ''}
+        <span>${escapeHtml(qr.message || 'Escanea el QR. Al confirmarse el pago, tu servicio se recargara automaticamente.')}</span>
+      </div>
+    `;
+  } catch (error) {
+    qrTarget.innerHTML = `
+      <div class="qr-box danger">
+        <strong>No se pudo generar el QR</strong>
+        <span>${escapeHtml(error.message)}</span>
+      </div>
+    `;
+  } finally {
+    button.disabled = false;
+  }
 });
 
 const cart = {

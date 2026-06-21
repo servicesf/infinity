@@ -2,6 +2,7 @@ alter table routers enable row level security;
 alter table customers enable row level security;
 alter table payments enable row level security;
 alter table router_actions enable row level security;
+alter table payment_webhook_events enable row level security;
 alter table products enable row level security;
 alter table coupons enable row level security;
 alter table orders enable row level security;
@@ -41,6 +42,12 @@ with check (auth.role() = 'service_role');
 drop policy if exists "service role full router actions" on router_actions;
 create policy "service role full router actions"
 on router_actions for all
+using (auth.role() = 'service_role')
+with check (auth.role() = 'service_role');
+
+drop policy if exists "service role full payment webhook events" on payment_webhook_events;
+create policy "service role full payment webhook events"
+on payment_webhook_events for all
 using (auth.role() = 'service_role')
 with check (auth.role() = 'service_role');
 

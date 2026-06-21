@@ -45,8 +45,11 @@ create table if not exists payments (
   paid_at timestamptz not null default now(),
   service_days integer not null default 30,
   extra_hours integer not null default 12,
+  qr_payload jsonb not null default '{}',
   created_at timestamptz not null default now()
 );
+
+alter table payments add column if not exists qr_payload jsonb not null default '{}';
 
 create table if not exists router_actions (
   id uuid primary key default gen_random_uuid(),
@@ -61,6 +64,18 @@ create table if not exists router_actions (
 );
 
 create index if not exists router_actions_status_idx on router_actions(status, created_at);
+
+create table if not exists payment_webhook_events (
+  id uuid primary key default gen_random_uuid(),
+  payment_id uuid references payments(id) on delete set null,
+  provider text not null default 'qr-api',
+  payload jsonb not null default '{}',
+  processed boolean not null default false,
+  error text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists payment_webhook_events_payment_idx on payment_webhook_events(payment_id, created_at);
 
 create table if not exists products (
   id uuid primary key default gen_random_uuid(),
