@@ -309,7 +309,7 @@ main {
 }
 
 .home-carousel {
-  min-height: 485px;
+  min-height: 0;
   display: grid;
   grid-template-rows: 1fr auto;
   position: relative;
@@ -318,15 +318,17 @@ main {
 
 .top-carousel {
   width: 100%;
-  min-height: clamp(390px, 56vh, 650px);
-  margin: -30px 0 14px;
+  height: clamp(220px, 28vw, 390px);
+  min-height: 0;
+  margin: -30px 0 8px;
   border-radius: 0;
   border-left: 0;
   border-right: 0;
 }
 
 .top-carousel .carousel-track {
-  min-height: clamp(390px, 56vh, 650px);
+  height: 100%;
+  min-height: 0;
 }
 
 .top-carousel .carousel-slide {
@@ -344,7 +346,7 @@ main {
 
 .top-carousel .carousel-slide img {
   width: 100%;
-  height: clamp(390px, 56vh, 650px);
+  height: 100%;
   border-radius: 0;
   object-fit: cover;
   object-position: center;
@@ -383,7 +385,6 @@ main {
   right: clamp(12px, 2.4vw, 34px);
 }
 
-.home-carousel::before,
 .category-card::before,
 .product-card::before {
   content: "";
@@ -394,7 +395,6 @@ main {
   opacity: 0.85;
 }
 
-.home-carousel > *,
 .category-card > *,
 .product-card > * {
   position: relative;
@@ -528,20 +528,20 @@ main {
 }
 
 .welcome-services {
-  padding: 10px 0 24px;
+  padding: 6px 0 20px;
 }
 
 .home-hub {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .home-hero-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  gap: 14px;
-  padding: clamp(16px, 2.6vw, 24px);
+  gap: 12px;
+  padding: clamp(14px, 2vw, 20px);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
@@ -552,15 +552,15 @@ main {
 
 .home-hero-card h1 {
   max-width: 780px;
-  margin-top: 12px;
+  margin-top: 0;
   color: #062678;
-  font-size: clamp(2rem, 4.8vw, 4.1rem);
-  line-height: 0.98;
+  font-size: clamp(1.75rem, 3.2vw, 2.9rem);
+  line-height: 1.02;
 }
 
 .home-hero-card p {
   max-width: 680px;
-  margin-top: 12px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: clamp(1rem, 2vw, 1.18rem);
   font-weight: 600;
@@ -575,7 +575,7 @@ main {
 
 .home-category-group {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
 .section-title.compact {
@@ -600,7 +600,7 @@ main {
 .welcome-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .featured-list {
@@ -615,9 +615,9 @@ main {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 12px;
-  min-height: 92px;
-  padding: 13px;
+  gap: 10px;
+  min-height: 84px;
+  padding: 11px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
@@ -641,19 +641,19 @@ main {
 }
 
 .welcome-icon {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
+  border-radius: 14px;
   color: var(--blue);
   background:
     radial-gradient(circle at 35% 25%, rgba(0, 213, 255, 0.22), transparent 38%),
     linear-gradient(135deg, #f5fbff, #e5f5ff);
   border: 1px solid rgba(0, 213, 255, 0.28);
   box-shadow: 0 18px 42px rgba(0, 51, 160, 0.13);
-  font-size: 1.35rem;
+  font-size: 1.22rem;
 }
 
 .welcome-item h3 {
@@ -665,9 +665,9 @@ main {
 }
 
 .welcome-item p {
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 600;
   line-height: 1.22;
 }
@@ -1828,11 +1828,13 @@ main {
   }
 
   .top-carousel {
-    min-height: 500px;
+    height: clamp(220px, 34vw, 360px);
+    min-height: 0;
   }
 
   .top-carousel .carousel-track {
-    min-height: 500px;
+    height: 100%;
+    min-height: 0;
   }
 
   .plans-grid,
@@ -1960,9 +1962,10 @@ main {
   }
 
   .top-carousel {
+    height: auto;
     min-height: auto;
     aspect-ratio: 16 / 9;
-    margin: -22px 0 8px;
+    margin: -24px 0 6px;
   }
 
   .top-carousel .carousel-track {
