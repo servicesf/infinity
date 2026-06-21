@@ -334,6 +334,25 @@ main {
   padding: 0;
 }
 
+.top-carousel .carousel-slide::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(0, 18, 49, 0.72), rgba(0, 80, 160, 0.26) 48%, rgba(0, 0, 0, 0.08)),
+    linear-gradient(0deg, rgba(0, 12, 34, 0.42), transparent 46%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.carousel-link {
+  position: absolute;
+  inset: 0;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .top-carousel .carousel-slide img {
   width: 100%;
   height: clamp(280px, 46vh, 480px);
@@ -341,31 +360,88 @@ main {
   object-fit: cover;
 }
 
-.top-carousel .carousel-slide div {
+.top-carousel .carousel-copy {
   position: absolute;
   left: clamp(18px, 5vw, 72px);
   bottom: clamp(22px, 6vw, 70px);
-  width: min(360px, calc(100% - 36px));
+  width: min(520px, calc(100% - 36px));
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 18px 40px rgba(0, 39, 94, 0.18);
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  z-index: 2;
 }
 
-.top-carousel .carousel-slide strong {
-  font-size: clamp(1rem, 2vw, 1.35rem);
+.top-carousel .carousel-copy strong {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4.6rem);
   line-height: 1.08;
-  background: linear-gradient(90deg, var(--blue), var(--cyan));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #ffffff;
+  letter-spacing: 0;
+  text-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
 }
 
-.top-carousel .carousel-slide span {
-  font-size: 0.72rem;
+.top-carousel .carousel-copy span {
+  display: inline-flex;
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(12px);
+}
+
+.top-carousel .carousel-copy small {
+  display: block;
+  max-width: 430px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: clamp(0.98rem, 1.8vw, 1.24rem);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(0, 30, 80, 0.36);
+  box-shadow: 0 18px 42px rgba(0, 22, 60, 0.2);
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.carousel-arrow:hover {
+  background: rgba(0, 121, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.58);
+  transform: translateY(-50%) scale(1.04);
+}
+
+.carousel-arrow-prev {
+  left: clamp(12px, 2.4vw, 34px);
+}
+
+.carousel-arrow-next {
+  right: clamp(12px, 2.4vw, 34px);
 }
 
 .home-carousel::before,
@@ -386,6 +462,11 @@ main {
 .product-card > * {
   position: relative;
   z-index: 1;
+}
+
+.home-carousel > .carousel-arrow {
+  position: absolute;
+  z-index: 5;
 }
 
 .carousel-track {
@@ -418,7 +499,7 @@ main {
   border-radius: 14px;
 }
 
-.carousel-slide div {
+.home-carousel:not(.top-carousel) .carousel-slide div {
   margin-top: 14px;
   padding: 14px;
   border-radius: 14px;
@@ -426,14 +507,14 @@ main {
   border: 1px solid rgba(0, 213, 255, 0.28);
 }
 
-.carousel-slide span {
+.home-carousel:not(.top-carousel) .carousel-slide span {
   display: block;
   color: var(--muted);
   font-weight: 800;
   font-size: 0.86rem;
 }
 
-.carousel-slide strong {
+.home-carousel:not(.top-carousel) .carousel-slide strong {
   display: block;
   margin-top: 3px;
   color: #062678;
@@ -444,7 +525,12 @@ main {
   display: flex;
   justify-content: center;
   gap: 8px;
-  padding: 0 0 16px;
+  padding: 0 0 18px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
 }
 
 .carousel-dots button {
@@ -1726,6 +1812,11 @@ main {
     min-height: 380px;
   }
 
+  .top-carousel .carousel-copy strong {
+    max-width: 13ch;
+    font-size: clamp(2rem, 6vw, 3.8rem);
+  }
+
   .plans-grid,
   .featured-list,
   .secondary-list,
@@ -1826,20 +1917,66 @@ main {
     padding: 26px 20px;
   }
 
-  .carousel-slide img {
+  .home-carousel:not(.top-carousel) .carousel-slide img {
     height: 210px;
   }
 
-  .home-carousel {
+  .home-carousel:not(.top-carousel) {
     min-height: 370px;
   }
 
-  .carousel-track {
+  .home-carousel:not(.top-carousel) .carousel-track {
     min-height: 320px;
   }
 
+  .top-carousel {
+    min-height: 340px;
+    margin: -18px 0 18px;
+  }
+
+  .top-carousel .carousel-track {
+    min-height: 340px;
+  }
+
   .top-carousel .carousel-slide img {
-    height: 310px;
+    height: 340px;
+  }
+
+  .top-carousel .carousel-copy {
+    left: 18px;
+    right: 18px;
+    bottom: 54px;
+    width: auto;
+    gap: 6px;
+  }
+
+  .top-carousel .carousel-copy strong {
+    max-width: 11ch;
+    font-size: 2.15rem;
+  }
+
+  .top-carousel .carousel-copy small {
+    max-width: 280px;
+    font-size: 0.92rem;
+  }
+
+  .top-carousel .carousel-copy span {
+    padding: 7px 10px;
+    font-size: 0.68rem;
+  }
+
+  .carousel-arrow {
+    width: 38px;
+    height: 38px;
+    font-size: 0.88rem;
+  }
+
+  .carousel-arrow-prev {
+    left: 10px;
+  }
+
+  .carousel-arrow-next {
+    right: 10px;
   }
 
   .home-strip,

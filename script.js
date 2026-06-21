@@ -53,8 +53,12 @@ showPage(location.hash.replace('#', '') || 'inicio');
 
 const carouselSlides = document.querySelectorAll('.carousel-slide');
 const carouselDots = document.querySelectorAll('#homeCarouselDots button');
+const carouselTrack = document.getElementById('homeCarouselTrack');
+const carouselPrev = document.getElementById('homeCarouselPrev');
+const carouselNext = document.getElementById('homeCarouselNext');
 let carouselIndex = 0;
 let carouselTimer = null;
+let carouselTouchStart = 0;
 
 function showCarouselSlide(index) {
   if (!carouselSlides.length) return;
@@ -81,6 +85,28 @@ carouselDots.forEach((dot, index) => {
     startCarousel();
   });
 });
+
+carouselPrev?.addEventListener('click', () => {
+  showCarouselSlide(carouselIndex - 1);
+  startCarousel();
+});
+
+carouselNext?.addEventListener('click', () => {
+  showCarouselSlide(carouselIndex + 1);
+  startCarousel();
+});
+
+carouselTrack?.addEventListener('touchstart', event => {
+  carouselTouchStart = event.touches[0]?.clientX || 0;
+}, { passive: true });
+
+carouselTrack?.addEventListener('touchend', event => {
+  const touchEnd = event.changedTouches[0]?.clientX || 0;
+  const distance = carouselTouchStart - touchEnd;
+  if (Math.abs(distance) < 45) return;
+  showCarouselSlide(carouselIndex + (distance > 0 ? 1 : -1));
+  startCarousel();
+}, { passive: true });
 
 showCarouselSlide(0);
 startCarousel();
