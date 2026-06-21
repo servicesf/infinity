@@ -29,17 +29,12 @@
       {
         "nombre": "100 Mbps",
         "precio": "200 Bs/mes",
-        "ideal_para": "Casas con muchos equipos y streaming HD"
+        "ideal_para": "Casas con muchos equipos, streaming y reuniones. Equipo WiFi 6 incluido"
       },
       {
         "nombre": "200 Mbps",
         "precio": "300 Bs/mes",
-        "ideal_para": "Streaming 4K, trabajo pesado y alto rendimiento"
-      },
-      {
-        "nombre": "300 Mbps",
-        "precio": "Consultar",
-        "ideal_para": "Plan WiFi 6 Premium para hogares exigentes y maximo rendimiento"
+        "ideal_para": "Streaming 4K, trabajo pesado y maximo rendimiento. Equipo WiFi 6 incluido"
       }
     ]
   },

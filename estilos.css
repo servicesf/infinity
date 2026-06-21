@@ -1007,6 +1007,21 @@ main {
   font-size: 1.55rem;
 }
 
+.equipment-tag {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 24px;
+  margin: 5px 0 2px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #075985;
+  background: #e8f8ff;
+  border: 1px solid rgba(0, 170, 255, 0.24);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
 .plan-body .btn {
   min-height: 48px;
   margin-top: 12px;
