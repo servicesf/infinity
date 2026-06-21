@@ -347,6 +347,7 @@ main {
   height: clamp(390px, 56vh, 650px);
   border-radius: 0;
   object-fit: cover;
+  object-position: center;
 }
 
 .carousel-arrow {
@@ -1895,6 +1896,18 @@ main {
     justify-content: flex-start;
   }
 
+  .home-hero-card h1 {
+    margin-top: 0;
+    font-size: clamp(1.55rem, 6vw, 2.5rem);
+    line-height: 1.04;
+  }
+
+  .home-hero-card p {
+    margin-top: 8px;
+    font-size: 0.96rem;
+    line-height: 1.32;
+  }
+
   .featured-list {
     grid-template-columns: 1fr;
   }
@@ -1947,30 +1960,54 @@ main {
   }
 
   .top-carousel {
-    min-height: 385px;
-    margin: -18px 0 10px;
+    min-height: auto;
+    aspect-ratio: 16 / 9;
+    margin: -22px 0 8px;
   }
 
   .top-carousel .carousel-track {
-    min-height: 385px;
+    min-height: 100%;
   }
 
   .top-carousel .carousel-slide img {
-    height: 385px;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .carousel-track,
+  .carousel-link,
+  .carousel-slide {
+    min-height: 100%;
   }
 
   .carousel-arrow {
-    width: 38px;
-    height: 38px;
-    font-size: 0.88rem;
+    width: 34px;
+    height: 34px;
+    font-size: 0.78rem;
+    background: rgba(0, 30, 80, 0.28);
   }
 
   .carousel-arrow-prev {
-    left: 10px;
+    left: 8px;
   }
 
   .carousel-arrow-next {
-    right: 10px;
+    right: 8px;
+  }
+
+  .carousel-dots {
+    gap: 4px;
+    padding-bottom: 7px;
+  }
+
+  .carousel-dots button {
+    width: 5px;
+    height: 5px;
+  }
+
+  .carousel-dots button.active {
+    width: 14px;
   }
 
   .home-strip,
@@ -2008,23 +2045,50 @@ main {
   }
 
   .home-hero-card {
-    padding: 16px;
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .home-hero-actions {
+    gap: 8px;
+  }
+
+  .home-hero-actions .btn {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.9rem;
+  }
+
+  .welcome-services {
+    padding: 6px 0 18px;
+  }
+
+  .home-hub {
+    gap: 10px;
+  }
+
+  .home-category-group {
+    gap: 8px;
   }
 
   .welcome-item {
-    min-height: 86px;
-    padding: 12px;
+    min-height: 76px;
+    padding: 10px;
   }
 
   .welcome-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    font-size: 1.2rem;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    font-size: 1.08rem;
+  }
+
+  .welcome-item h3 {
+    font-size: 1rem;
   }
 
   .welcome-item p {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
   }
 
   .charge-row {
