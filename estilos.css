@@ -383,7 +383,6 @@ main {
 }
 
 .home-carousel::before,
-.plan-card::before,
 .category-card::before,
 .product-card::before {
   content: "";
@@ -395,7 +394,6 @@ main {
 }
 
 .home-carousel > *,
-.plan-card > *,
 .category-card > *,
 .product-card > * {
   position: relative;
@@ -823,9 +821,9 @@ main {
 }
 
 .plans-grid {
-  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(250px, 1fr));
   align-items: stretch;
-  gap: 14px;
+  gap: 16px;
 }
 
 .plan-card {
@@ -835,18 +833,27 @@ main {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
-  border-color: #d8d8d8;
+  border-radius: 12px;
+  border: 1px solid #dfe7ef;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(7, 27, 58, 0.07);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .plan-card.highlighted {
-  border: 1px solid #d8d8d8;
-  box-shadow: 0 18px 50px rgba(0, 51, 160, 0.14);
+  border-color: rgba(0, 93, 255, 0.32);
+  box-shadow: 0 18px 42px rgba(0, 93, 255, 0.13);
+}
+
+.plan-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 93, 255, 0.28);
+  box-shadow: 0 20px 46px rgba(7, 27, 58, 0.12);
 }
 
 .plan-card.sold-out {
-  background: #f4f7fa;
-  border-color: #d9e1e8;
+  background: #f7f9fb;
+  border-color: #dfe5ea;
   box-shadow: none;
 }
 
@@ -854,7 +861,7 @@ main {
   opacity: 0.78;
 }
 
-.plan-card.sold-out .offer-badges span {
+.plan-card.sold-out .offer-badges {
   color: #b42318;
   background: #ffe9e7;
   border-color: #ffc8c1;
@@ -890,67 +897,63 @@ main {
 
 .plan-body {
   min-height: 100%;
-  padding: 46px 16px 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
+.plan-topline {
+  min-height: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .plan-service {
-  display: block;
-  max-width: calc(100% - 148px);
-  min-height: 22px;
-  color: var(--ink);
-  font-size: 0.92rem;
-  font-weight: 500;
+  display: inline-flex;
+  max-width: none;
+  min-height: 0;
+  color: #53687f;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.has-stacked-badges .plan-service {
-  max-width: calc(100% - 160px);
-}
-
 .plan-card h3 {
   min-height: 0;
-  margin-top: 2px;
-  font-size: 1.45rem;
+  margin-top: 8px;
+  font-size: clamp(1.9rem, 3vw, 2.55rem);
   line-height: 1.05;
   color: #062678;
+  letter-spacing: 0;
 }
 
 .plan-card p {
-  min-height: 40px;
-  margin-top: 6px;
-  margin-bottom: 12px;
-  font-size: 0.92rem;
+  min-height: 48px;
+  margin: 8px 0 16px;
+  color: #4d6177;
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 .offer-badges {
-  position: absolute;
-  top: 46px;
-  right: 16px;
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  max-width: calc(100% - 32px);
-  z-index: 2;
-  pointer-events: none;
-}
-
-.offer-badges.stacked {
-  flex-direction: column;
-}
-
-.offer-badges span,
-.offer-badges small {
-  min-height: 22px;
-  max-width: 100%;
+  position: static;
+  flex: 0 0 auto;
+  min-height: 24px;
+  max-width: 48%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 9px;
+  padding: 0 10px;
   border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  border: 0;
+  box-shadow: none;
   font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
@@ -959,25 +962,11 @@ main {
   text-overflow: ellipsis;
 }
 
-.offer-badges span {
-  color: #fff;
-  background: linear-gradient(135deg, var(--blue), var(--cyan));
-  border: 0;
-  box-shadow: 0 10px 22px rgba(0, 93, 255, 0.18);
-}
-
-.offer-badges small {
-  color: #075985;
-  background: #e8f8ff;
-  border: 1px solid rgba(0, 170, 255, 0.24);
-  box-shadow: 0 8px 18px rgba(0, 93, 255, 0.08);
-}
-
 .plan-price {
   display: flex;
   align-items: baseline;
   gap: 5px;
-  margin: 10px 0 2px;
+  margin: 10px 0 0;
 }
 
 .plan-price strong {
@@ -985,7 +974,7 @@ main {
   -webkit-background-clip: initial;
   background-clip: initial;
   color: #003cff;
-  font-size: 1.72rem;
+  font-size: 1.85rem;
   line-height: 1;
 }
 
@@ -1000,10 +989,51 @@ main {
 }
 
 .plan-body .btn {
-  min-height: 48px;
+  min-height: 46px;
   margin-top: auto;
   border-radius: 999px;
   font-size: 0.98rem;
+}
+
+.plan-details {
+  margin-top: 12px;
+  border-top: 1px solid #e8eef4;
+}
+
+.plan-details summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #003cff;
+  font-size: 0.94rem;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.plan-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-details summary::after {
+  content: "+";
+  color: #4d6177;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.plan-details[open] summary::after {
+  content: "-";
+}
+
+.plan-details ul {
+  display: grid;
+  gap: 7px;
+  padding: 0 0 4px 18px;
+  color: #4d6177;
+  font-size: 0.88rem;
+  line-height: 1.35;
 }
 
 .feature-panel {
@@ -2008,8 +2038,8 @@ main {
 
   .plan-card h3 {
     min-height: auto;
-    margin-top: 2px;
-    font-size: 1.72rem;
+    margin-top: 7px;
+    font-size: 2rem;
     line-height: 1.02;
   }
 
@@ -2019,26 +2049,27 @@ main {
 
   .plan-body {
     min-height: auto;
-    padding: 14px 12px 13px;
+    padding: 16px;
+  }
+
+  .plan-topline {
+    min-height: 24px;
+    gap: 8px;
   }
 
   .plan-service {
-    max-width: calc(100% - 122px);
-    min-height: 20px;
+    max-width: 54%;
+    min-height: 0;
     font-size: 0.9rem;
     line-height: 1.15;
   }
 
-  .has-stacked-badges .plan-service {
-    max-width: calc(100% - 132px);
-  }
-
   .plan-price {
-    margin: 5px 0 0;
+    margin: 8px 0 0;
   }
 
   .plan-price strong {
-    font-size: 1.62rem;
+    font-size: 1.74rem;
   }
 
   .plan-price span {
@@ -2047,29 +2078,35 @@ main {
 
   .plan-card p {
     min-height: 0;
-    margin: 5px 0 9px;
-    font-size: 0.88rem;
-    line-height: 1.28;
+    margin: 7px 0 12px;
+    font-size: 0.9rem;
+    line-height: 1.32;
   }
 
   .plan-body .btn {
-    min-height: 42px;
-    margin-top: 5px;
+    min-height: 44px;
+    margin-top: auto;
     font-size: 0.94rem;
   }
 
   .offer-badges {
-    top: 14px;
-    right: 12px;
-    max-width: 48%;
-    gap: 2px;
+    min-height: 22px;
+    max-width: 46%;
+    padding: 0 8px;
+    font-size: 0.62rem;
   }
 
-  .offer-badges span,
-  .offer-badges small {
-    min-height: 19px;
-    padding: 0 7px;
-    font-size: 0.61rem;
+  .plan-details {
+    margin-top: 10px;
+  }
+
+  .plan-details summary {
+    min-height: 38px;
+    font-size: 0.9rem;
+  }
+
+  .plan-details ul {
+    font-size: 0.82rem;
   }
 
   .hero-actions .btn,
