@@ -12,24 +12,19 @@
     },
     "planes": [
       {
-        "nombre": "10 Mbps",
-        "precio": "95 Bs/mes",
-        "ideal_para": "Plan básico agotado temporalmente"
-      },
-      {
         "nombre": "25 Mbps",
         "precio": "120 Bs/mes",
-        "ideal_para": "Estudio, video y redes sociales"
+        "ideal_para": "Plan recomendado de entrada para estudio, redes sociales y uso básico en el hogar"
       },
       {
         "nombre": "50 Mbps",
         "precio": "150 Bs/mes",
-        "ideal_para": "Familias con varios dispositivos y streaming"
+        "ideal_para": "Plan más elegido, ideal para varios dispositivos y streaming estable"
       },
       {
-        "nombre": "50 Mbps + 2000 canales, peliculas y series",
+        "nombre": "50 Mbps + TV",
         "precio": "160 Bs/mes",
-        "ideal_para": "Familias que quieren internet y televisión"
+        "ideal_para": "Internet con canales, películas y series incluidos"
       },
       {
         "nombre": "100 Mbps",
@@ -57,11 +52,13 @@
   },
   "faq": {
     "corte_servicio": "El servicio puede cortarse si no se paga antes del día 5 de cada mes.",
-    "soporte": "El soporte técnico está disponible de lunes a sábado de 8am a 9pm.",
+    "soporte": "El soporte técnico está disponible de 8am a 10pm.",
     "tiempo_instalacion": "La instalación se realiza previa coordinación por WhatsApp."
   },
   "requisitos": {
-    "velocidad_recomendada": "Mínimo 10 Mbps. Para mejor estabilidad se recomienda 15 Mbps o más."
+    "velocidad_recomendada": "Para mejor rendimiento WiFi se recomiendan routers WiFi 5 o WiFi 6.",
+    "nota_wifi": "La velocidad contratada corresponde al internet; el WiFi depende del router del cliente.",
+    "factibilidad": "Servicio sujeto a factibilidad técnica."
   },
   "reparaciones": {
     "descripcion": "Reparación de televisores, parlantes, radios y equipos electrónicos. Diagnóstico sin costo."

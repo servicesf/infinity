@@ -776,6 +776,10 @@ main {
   font-size: 0.76rem;
 }
 
+.recommended.soft {
+  background: linear-gradient(135deg, #005dff, var(--cyan));
+}
+
 .plan-detail {
   display: flex;
   align-items: center;
