@@ -834,22 +834,6 @@ main {
   border-color: #ffc8c1;
 }
 
-.recommended {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 9px;
-  border-radius: 999px;
-  color: #fff;
-  background: linear-gradient(135deg, #43bd22, var(--green));
-  font-weight: 900;
-  font-size: 0.76rem;
-}
-
-.recommended.soft {
-  background: linear-gradient(135deg, #005dff, var(--cyan));
-}
-
 .plan-detail {
   display: flex;
   align-items: center;
@@ -866,7 +850,7 @@ main {
 }
 
 .plan-body {
-  padding: 18px 16px;
+  padding: 46px 16px 18px;
 }
 
 .plan-service {
@@ -891,22 +875,23 @@ main {
 }
 
 .offer-badges {
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
 }
 
 .offer-badges span {
-  min-height: 22px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
-  padding: 0 10px;
-  border-radius: 4px;
-  color: #001c15;
-  background: #63efbd;
-  border: 1px solid #23c993;
-  font-size: 0.78rem;
+  padding: 0 11px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  border: 0;
+  box-shadow: 0 10px 22px rgba(0, 93, 255, 0.18);
+  font-size: 0.74rem;
   font-weight: 900;
 }
 
@@ -930,6 +915,10 @@ main {
   color: #003cff;
   font-size: 0.98rem;
   font-weight: 800;
+}
+
+.plan-price.quote strong {
+  font-size: 1.55rem;
 }
 
 .plan-body .btn {

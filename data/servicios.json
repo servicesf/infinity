@@ -35,6 +35,11 @@
         "nombre": "200 Mbps",
         "precio": "300 Bs/mes",
         "ideal_para": "Streaming 4K, trabajo pesado y alto rendimiento"
+      },
+      {
+        "nombre": "300 Mbps",
+        "precio": "Consultar",
+        "ideal_para": "Plan WiFi 6 Premium para hogares exigentes y maximo rendimiento"
       }
     ]
   },
