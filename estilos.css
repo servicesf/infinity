@@ -886,12 +886,12 @@ main {
 
 .plans-grid {
   grid-template-columns: repeat(3, minmax(240px, 1fr));
-  align-items: start;
+  align-items: stretch;
   gap: 14px;
 }
 
 .plan-card {
-  min-height: 0;
+  min-height: 100%;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -951,11 +951,10 @@ main {
 }
 
 .plan-body {
+  min-height: 100%;
   padding: 46px 16px 18px;
-}
-
-.has-stacked-badges .plan-body {
-  padding-top: 58px;
+  display: flex;
+  flex-direction: column;
 }
 
 .plan-service {
@@ -976,16 +975,20 @@ main {
 .plan-card p {
   min-height: 40px;
   margin-top: 6px;
+  margin-bottom: 12px;
   font-size: 0.92rem;
 }
 
 .offer-badges {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   display: flex;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
+  max-width: calc(100% - 20px);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .offer-badges.stacked {
@@ -994,13 +997,19 @@ main {
 
 .offer-badges span,
 .offer-badges small {
-  min-height: 26px;
+  min-height: 22px;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
-  padding: 0 11px;
+  justify-content: center;
+  padding: 0 9px;
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offer-badges span {
@@ -1045,7 +1054,7 @@ main {
 
 .plan-body .btn {
   min-height: 48px;
-  margin-top: 12px;
+  margin-top: auto;
   border-radius: 999px;
   font-size: 0.98rem;
 }
@@ -2080,6 +2089,19 @@ main {
 
   .plan-card h3 {
     min-height: auto;
+  }
+
+  .offer-badges {
+    top: 9px;
+    right: 9px;
+    max-width: 54%;
+  }
+
+  .offer-badges span,
+  .offer-badges small {
+    min-height: 20px;
+    padding: 0 7px;
+    font-size: 0.6rem;
   }
 
   .hero-actions .btn,
