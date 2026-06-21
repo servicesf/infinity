@@ -2008,19 +2008,68 @@ main {
 
   .plan-card h3 {
     min-height: auto;
+    margin-top: 1px;
+    font-size: 1.34rem;
+    line-height: 1;
+  }
+
+  .plan-card {
+    min-height: auto;
+  }
+
+  .plan-body {
+    min-height: auto;
+    padding: 14px 12px 12px;
+  }
+
+  .plan-service {
+    max-width: calc(100% - 116px);
+    min-height: 18px;
+    font-size: 0.8rem;
+    line-height: 1.1;
+  }
+
+  .has-stacked-badges .plan-service {
+    max-width: calc(100% - 124px);
+  }
+
+  .plan-price {
+    margin: 6px 0 0;
+  }
+
+  .plan-price strong {
+    font-size: 1.54rem;
+  }
+
+  .plan-price span {
+    font-size: 0.86rem;
+  }
+
+  .plan-card p {
+    min-height: 0;
+    margin: 4px 0 8px;
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  .plan-body .btn {
+    min-height: 42px;
+    margin-top: 6px;
+    font-size: 0.9rem;
   }
 
   .offer-badges {
-    top: 46px;
+    top: 14px;
     right: 12px;
-    max-width: 52%;
+    max-width: 48%;
+    gap: 2px;
   }
 
   .offer-badges span,
   .offer-badges small {
-    min-height: 20px;
-    padding: 0 7px;
-    font-size: 0.6rem;
+    min-height: 18px;
+    padding: 0 6px;
+    font-size: 0.56rem;
   }
 
   .hero-actions .btn,
