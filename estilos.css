@@ -318,7 +318,7 @@ main {
 
 .top-carousel {
   width: 100%;
-  min-height: calc(100vh - 100px);
+  min-height: clamp(320px, 46vh, 520px);
   margin: -26px 0 28px;
   border-radius: 0;
   border-left: 0;
@@ -326,7 +326,7 @@ main {
 }
 
 .top-carousel .carousel-track {
-  min-height: calc(100vh - 152px);
+  min-height: clamp(280px, 46vh, 480px);
 }
 
 .top-carousel .carousel-slide {
@@ -336,7 +336,7 @@ main {
 
 .top-carousel .carousel-slide img {
   width: 100%;
-  height: calc(100vh - 152px);
+  height: clamp(280px, 46vh, 480px);
   border-radius: 0;
   object-fit: cover;
 }
@@ -505,78 +505,148 @@ main {
 }
 
 .welcome-services {
-  padding: clamp(24px, 4vw, 42px) 0 24px;
-  text-align: center;
+  padding: clamp(18px, 4vw, 38px) 0 30px;
 }
 
-.welcome-heading span {
-  display: block;
-  color: var(--cyan);
-  font-size: clamp(1.35rem, 5vw, 2.5rem);
-  font-weight: 800;
-  line-height: 1;
+.home-hub {
+  display: grid;
+  gap: 18px;
 }
 
-.welcome-heading h2 {
-  margin-top: 4px;
-  color: #009be8;
-  font-size: clamp(2.3rem, 9vw, 5rem);
-  line-height: 0.95;
+.home-hero-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 18px;
+  padding: clamp(20px, 4vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 88% 16%, rgba(0, 213, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #fff, #f3fbff);
+  box-shadow: var(--shadow);
+}
+
+.home-hero-card h1 {
+  max-width: 780px;
+  margin-top: 12px;
+  color: #062678;
+  font-size: clamp(2rem, 4.8vw, 4.1rem);
+  line-height: 0.98;
+}
+
+.home-hero-card p {
+  max-width: 680px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.18rem);
+  font-weight: 600;
+}
+
+.home-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.home-category-group {
+  display: grid;
+  gap: 12px;
+}
+
+.section-title.compact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-title.compact span {
+  color: var(--blue);
   font-weight: 900;
   text-transform: uppercase;
+  font-size: 0.78rem;
 }
 
-.welcome-heading i {
-  display: block;
-  width: 70px;
-  height: 4px;
-  margin: 16px auto 0;
-  border-radius: 999px;
-  background: #1b2b50;
+.section-title.compact h2 {
+  color: #142a52;
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
 }
 
 .welcome-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 28px;
+  gap: 12px;
+}
+
+.featured-list {
+  grid-template-columns: 1.25fr 1fr 1fr;
+}
+
+.secondary-list {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .welcome-item {
   display: grid;
-  justify-items: center;
-  gap: 10px;
-  min-height: 136px;
-  padding: 16px 10px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 92px;
+  padding: 13px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #fff;
-  box-shadow: 0 10px 26px rgba(0, 39, 94, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 39, 94, 0.07);
   color: var(--ink);
+  text-align: left;
+  transition: 0.18s ease;
+}
+
+.welcome-item:hover {
+  transform: translateY(-2px);
+  border-color: #a9ddec;
+  box-shadow: 0 14px 32px rgba(0, 39, 94, 0.12);
+}
+
+.welcome-item.main-feature {
+  background:
+    radial-gradient(circle at 90% 16%, rgba(0, 213, 255, 0.22), transparent 28%),
+    linear-gradient(135deg, #eef8ff, #fff);
+  border-color: #a9ddec;
 }
 
 .welcome-icon {
-  width: 66px;
-  height: 66px;
+  width: 52px;
+  height: 52px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 20px;
+  border-radius: 16px;
   color: var(--blue);
   background:
     radial-gradient(circle at 35% 25%, rgba(0, 213, 255, 0.22), transparent 38%),
     linear-gradient(135deg, #f5fbff, #e5f5ff);
   border: 1px solid rgba(0, 213, 255, 0.28);
   box-shadow: 0 18px 42px rgba(0, 51, 160, 0.13);
-  font-size: 1.8rem;
+  font-size: 1.35rem;
 }
 
 .welcome-item h3 {
   color: #142a52;
-  font-size: clamp(1rem, 2.4vw, 1.28rem);
-  line-height: 1;
+  font-size: 1rem;
+  line-height: 1.05;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.welcome-item p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.22;
 }
 
 .home-strip article {
@@ -1652,21 +1722,24 @@ main {
 
 @media (max-width: 1100px) {
   .hero-section,
+  .home-hero-card,
   .feature-panel,
   .client-portal,
   .shop-layout {
     grid-template-columns: 1fr;
   }
 
-.top-carousel {
-    min-height: calc(100vh - 90px);
+  .top-carousel {
+    min-height: 420px;
   }
 
   .top-carousel .carousel-track {
-    min-height: calc(100vh - 142px);
+    min-height: 380px;
   }
 
   .plans-grid,
+  .featured-list,
+  .secondary-list,
   .product-grid,
   .store-grid,
   .category-grid,
@@ -1721,6 +1794,18 @@ main {
     justify-content: flex-start;
   }
 
+  .home-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .featured-list {
+    grid-template-columns: 1fr;
+  }
+
+  .secondary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .top-actions .light,
   .top-actions .whatsapp {
     display: none;
@@ -1765,10 +1850,12 @@ main {
   }
 
   .top-carousel .carousel-slide img {
-    height: calc(100vh - 142px);
+    height: 310px;
   }
 
   .home-strip,
+  .featured-list,
+  .secondary-list,
   .plans-grid,
   .product-grid,
   .store-grid,
@@ -1800,21 +1887,24 @@ main {
     min-height: 86px;
   }
 
-  .welcome-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+  .home-hero-card {
+    padding: 18px;
   }
 
   .welcome-item {
-    min-height: 118px;
-    padding: 12px 8px;
+    min-height: 86px;
+    padding: 12px;
   }
 
   .welcome-icon {
-    width: 54px;
-    height: 54px;
+    width: 46px;
+    height: 46px;
     border-radius: 16px;
-    font-size: 1.45rem;
+    font-size: 1.2rem;
+  }
+
+  .welcome-item p {
+    font-size: 0.82rem;
   }
 
   .charge-row {
@@ -1838,7 +1928,22 @@ main {
   .chat-widget {
     left: 10px;
     right: 10px;
-    bottom: 148px;
+    bottom: 118px;
     width: auto;
+  }
+
+  .wa-float,
+  .ai-float {
+    right: 14px;
+    width: 46px;
+    height: 46px;
+  }
+
+  .wa-float {
+    bottom: 16px;
+  }
+
+  .ai-float {
+    bottom: 68px;
   }
 }
