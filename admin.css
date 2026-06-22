@@ -284,14 +284,17 @@
   gap: 10px;
 }
 
-.chart-track {
+.chart-track,
+.bar {
   height: 28px;
   overflow: hidden;
   border-radius: 999px;
   background: #edf5fa;
 }
 
-.chart-bar {
+.chart-bar,
+.bar i {
+  display: block;
   height: 100%;
   min-width: 8px;
   border-radius: inherit;
@@ -380,7 +383,9 @@
 }
 
 .client-row:hover,
-.client-row.selected {
+.client-row.selected,
+.client-table tr:hover,
+.client-table tr.selected {
   background: #f3fbff;
 }
 
@@ -399,7 +404,8 @@
   font-size: 0.86rem;
 }
 
-.pill {
+.pill,
+.state-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -411,19 +417,37 @@
   font-weight: 900;
 }
 
-.pill.activo {
+.pill.activo,
+.state-pill.activo {
   color: #247a1f;
   background: #e7f6ec;
 }
 
-.pill.vencido {
+.pill.vencido,
+.state-pill.vencido {
   color: #9a6a00;
   background: #fff7df;
 }
 
-.pill.cortado {
+.pill.cortado,
+.state-pill.cortado {
   color: #b42318;
   background: #ffe9e7;
+}
+
+.client-table td > span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.client-table td strong.warning {
+  color: #9a6a00;
+}
+
+.client-table td strong.danger {
+  color: #b42318;
 }
 
 .due-note {
@@ -664,7 +688,8 @@
   line-height: 1.5;
 }
 
-.history {
+.history,
+.payment-history {
   display: grid;
   gap: 8px;
   margin-top: 12px;
@@ -672,7 +697,8 @@
   overflow: auto;
 }
 
-.history-item {
+.history-item,
+.payment-line {
   display: grid;
   gap: 3px;
   padding: 10px;
@@ -681,13 +707,21 @@
   background: #fbfdff;
 }
 
-.history-item strong {
+.history-item strong,
+.payment-line strong {
   color: var(--ink);
 }
 
-.history-item span {
+.history-item span,
+.payment-line span,
+.payment-line small,
+.payment-history p {
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.payment-history h4 {
+  margin-bottom: 4px;
 }
 
 .client-dialog {
