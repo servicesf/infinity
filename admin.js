@@ -336,7 +336,7 @@ async function performAction(action, options = {}) {
   if (!client) return;
 
   const labels = {
-    recharge: `Recargar 30 dias + 12 horas a ${client.nombre}?`,
+    recharge: `Recargar 30 dias + 6 horas a ${client.nombre}?`,
     'add-days': `Agregar dias a ${client.nombre}?`,
     cut: `Marcar corte y mandar accion pendiente para ${client.nombre}?`,
     enable: `Activar y mandar accion pendiente para ${client.nombre}?`

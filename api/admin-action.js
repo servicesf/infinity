@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
-    const { customerId, action, days = 30, hours = 12, amount, note = '' } = req.body || {};
+    const { customerId, action, days = 30, hours = 6, amount, note = '' } = req.body || {};
     if (!customerId || !action) return res.status(400).json({ ok: false, error: 'Faltan datos.' });
 
     const customer = await getCustomer(customerId);

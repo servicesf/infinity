@@ -9,7 +9,7 @@ La web ya tiene preparado:
 - Generacion de QR desde `/api/qr-create`.
 - Webhook de confirmacion en `/api/qr-webhook`.
 - Registro de pagos confirmados en Supabase.
-- Suma automatica de `30 dias + 12 horas`.
+- Suma automatica de `30 dias + 6 horas`.
 - Creacion de accion pendiente en `router_actions`.
 
 Importante: esta etapa no ejecuta cambios directos en MikroTik. El RB4011 y RB750 no se tocan hasta activar un worker seguro en la VPS.

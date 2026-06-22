@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         method: 'QR API',
         status: 'pendiente',
         service_days: 30,
-        extra_hours: 12
+        extra_hours: 6
       })
     });
     const payment = Array.isArray(payments) ? payments[0] : payments;
