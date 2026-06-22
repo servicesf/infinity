@@ -11,7 +11,8 @@ export default async function handler(req, res) {
   }
 
   const { username = '', password = '' } = req.body || {};
-  const valid = username === process.env.ADMIN_USER && password === process.env.ADMIN_PASSWORD;
+  const valid = String(username).trim() === String(process.env.ADMIN_USER || '').trim()
+    && String(password).trim() === String(process.env.ADMIN_PASSWORD || '').trim();
   if (!valid) return res.status(401).json({ ok: false, error: 'Usuario o contrasena incorrectos.' });
 
   res.setHeader('Set-Cookie', createSessionCookie(username));
