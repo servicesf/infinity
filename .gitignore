@@ -1,4 +1,5 @@
 .env
+.env.import
 bridge/.env
 bridge/clients-store.json
 .vercel
