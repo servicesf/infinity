@@ -2,7 +2,7 @@
 
 Este worker corre en la VPS y conecta Supabase con tus MikroTik por WireGuard.
 
-Por seguridad empieza en `WORKER_DRY_RUN=true`: solo muestra lo que haria, no corta.
+Por seguridad empieza en `WORKER_DRY_RUN=true`: solo muestra lo que haria, no corta y no cambia estados en Supabase.
 
 ## Archivo `.env.worker`
 
@@ -26,6 +26,7 @@ node tools/vps-worker.js
 ```
 
 Debe mostrar acciones en modo `[DRY_RUN]`.
+En este modo no deshabilita PPPoE y tampoco marca clientes como cortados.
 
 ## Activar cortes reales
 

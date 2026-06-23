@@ -217,6 +217,11 @@ async function processPendingActions() {
 
   for (const action of actions || []) {
     try {
+      if (config.dryRun) {
+        await runCommand(action.routers, action.action, action.payload || {});
+        continue;
+      }
+
       await supabase(`router_actions?id=eq.${action.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'running' })
@@ -249,6 +254,8 @@ async function processExpiredCustomers() {
         pppoe: customer.pppoe_user,
         queue: customer.queue_name || customer.pppoe_user
       });
+      if (config.dryRun) continue;
+
       await supabase(`customers?id=eq.${customer.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'cortado', updated_at: new Date().toISOString() })
