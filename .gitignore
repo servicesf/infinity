@@ -1,5 +1,6 @@
 .env
 .env.import
+.env.worker
 bridge/.env
 bridge/clients-store.json
 .vercel

@@ -236,7 +236,7 @@
         </div>
         <div class="form-row">
           <label for="clientPaidUntil">Pagado hasta</label>
-          <input id="clientPaidUntil" type="date" required/>
+          <input id="clientPaidUntil" type="date"/>
         </div>
       </div>
       <div class="form-row">
@@ -250,6 +250,29 @@
       <div class="dialog-actions">
         <button class="btn ghost" type="button" id="cancelClientBtn">Cancelar</button>
         <button class="btn primary" type="submit"><i class="fas fa-save"></i> Guardar cliente</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="client-dialog schedule-dialog" id="scheduleDialog">
+    <form method="dialog" class="client-form" id="scheduleForm">
+      <div class="dialog-head">
+        <h3>Programar corte</h3>
+        <button type="button" id="closeScheduleBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <p class="dialog-note" id="scheduleClientName">Selecciona fecha y hora exacta de corte.</p>
+      <input type="hidden" id="scheduleClientId"/>
+      <div class="form-row">
+        <label for="scheduleDueAt">Fecha y hora de corte</label>
+        <input id="scheduleDueAt" type="datetime-local" required/>
+      </div>
+      <label class="check-row" for="scheduleAutoCut">
+        <input id="scheduleAutoCut" type="checkbox" checked/>
+        <span>Ejecutar corte automatico cuando llegue la fecha</span>
+      </label>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="cancelScheduleBtn">Cancelar</button>
+        <button class="btn primary" type="submit"><i class="fas fa-calendar-check"></i> Guardar corte</button>
       </div>
     </form>
   </dialog>

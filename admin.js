@@ -31,7 +31,9 @@ const els = {
     revenue: document.getElementById('statRevenue')
   },
   dialog: document.getElementById('clientDialog'),
-  form: document.getElementById('clientForm')
+  form: document.getElementById('clientForm'),
+  scheduleDialog: document.getElementById('scheduleDialog'),
+  scheduleForm: document.getElementById('scheduleForm')
 };
 
 const authEls = {
@@ -278,7 +280,7 @@ function renderDetail() {
 
     <div class="detail-actions">
       <button class="btn primary" type="button" data-detail-action="recharge"><i class="fas fa-money-bill-wave"></i> Recargar 30d</button>
-      <button class="btn ghost" type="button" data-detail-action="add-days"><i class="fas fa-calendar-plus"></i> Agregar dias</button>
+      <button class="btn ghost" type="button" data-detail-action="schedule-cut"><i class="fas fa-calendar-check"></i> Programar corte</button>
       <button class="btn ghost" type="button" data-detail-action="edit"><i class="fas fa-pen"></i> Editar</button>
       ${status === 'cortado'
         ? '<button class="btn primary" type="button" data-detail-action="enable"><i class="fas fa-wifi"></i> Activar</button>'
@@ -337,7 +339,7 @@ async function performAction(action, options = {}) {
 
   const labels = {
     recharge: `Recargar 30 dias + 6 horas a ${client.nombre}?`,
-    'add-days': `Agregar dias a ${client.nombre}?`,
+    'schedule-cut': `Programar corte para ${client.nombre}?`,
     cut: `Marcar corte y mandar accion pendiente para ${client.nombre}?`,
     enable: `Activar y mandar accion pendiente para ${client.nombre}?`
   };
@@ -371,6 +373,14 @@ function openClientDialog(client = null) {
   document.getElementById('clientDueAt').value = toLocalDateTimeInput(client?.dueAt || '');
   document.getElementById('clientAutoCut').checked = client?.autoCutEnabled !== false;
   els.dialog.showModal();
+}
+
+function openScheduleDialog(client) {
+  document.getElementById('scheduleClientId').value = client.id;
+  document.getElementById('scheduleClientName').textContent = `${client.nombre} · PPPoE ${client.pppoe || '-'}`;
+  document.getElementById('scheduleDueAt').value = toLocalDateTimeInput(client.dueAt || '');
+  document.getElementById('scheduleAutoCut').checked = client.autoCutEnabled !== false;
+  els.scheduleDialog.showModal();
 }
 
 async function handleClientSubmit(event) {
@@ -449,6 +459,8 @@ document.getElementById('exportBtn').addEventListener('click', exportData);
 document.getElementById('clearPanelBtn').addEventListener('click', () => alert('Por seguridad no se permite limpiar clientes importados desde este panel.'));
 document.getElementById('closeDialogBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('cancelClientBtn').addEventListener('click', () => els.dialog.close());
+document.getElementById('closeScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
+document.getElementById('cancelScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
 
 document.getElementById('clientPlan').addEventListener('input', event => {
   const price = planPrices[event.target.value];
@@ -457,6 +469,26 @@ document.getElementById('clientPlan').addEventListener('input', event => {
 
 els.form.addEventListener('submit', event => {
   handleClientSubmit(event).catch(error => alert(error.message));
+});
+
+els.scheduleForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  try {
+    const dueAt = fromLocalDateTimeInput(document.getElementById('scheduleDueAt').value);
+    await api('/api/admin-action', {
+      method: 'POST',
+      body: JSON.stringify({
+        customerId: document.getElementById('scheduleClientId').value,
+        action: 'schedule-cut',
+        dueAt,
+        autoCutEnabled: document.getElementById('scheduleAutoCut').checked
+      })
+    });
+    els.scheduleDialog.close();
+    await loadData();
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 toolsMenuBtn.addEventListener('click', event => {
@@ -497,11 +529,7 @@ els.detail.addEventListener('click', event => {
   if (!client) return;
 
   if (action === 'edit') return openClientDialog(client);
-  if (action === 'add-days') {
-    const days = Number(prompt('Cuantos dias quieres agregar?', '1'));
-    if (!Number.isFinite(days) || days <= 0) return;
-    return performAction('add-days', { days, hours: 0, amount: 0, note: `Agregado manual ${days} dias` }).catch(error => alert(error.message));
-  }
+  if (action === 'schedule-cut') return openScheduleDialog(client);
   return performAction(action).catch(error => alert(error.message));
 });
 

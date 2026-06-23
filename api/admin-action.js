@@ -31,13 +31,13 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
-    const { customerId, action, days = 30, hours = 6, amount, note = '' } = req.body || {};
+    const { customerId, action, days = 30, hours = 6, amount, note = '', dueAt, autoCutEnabled = true } = req.body || {};
     if (!customerId || !action) return res.status(400).json({ ok: false, error: 'Faltan datos.' });
 
     const customer = await getCustomer(customerId);
     if (!customer) return res.status(404).json({ ok: false, error: 'Cliente no encontrado.' });
 
-    if (action === 'recharge' || action === 'add-days') {
+    if (action === 'recharge') {
       const baseDate = customer.paid_until && new Date(customer.paid_until) > new Date()
         ? customer.paid_until
         : new Date().toISOString();
@@ -74,6 +74,29 @@ export default async function handler(req, res) {
       });
 
       return res.status(200).json({ ok: true, paidUntil, queued: 'payment' });
+    }
+
+    if (action === 'schedule-cut') {
+      const scheduledDate = new Date(dueAt || '');
+      if (Number.isNaN(scheduledDate.getTime())) {
+        return res.status(400).json({ ok: false, error: 'Fecha de corte invalida.' });
+      }
+
+      await supabaseFetch(`customers?id=eq.${customer.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: scheduledDate <= new Date() ? 'vencido' : 'activo',
+          paid_until: scheduledDate.toISOString(),
+          auto_cut_enabled: Boolean(autoCutEnabled),
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      return res.status(200).json({
+        ok: true,
+        paidUntil: scheduledDate.toISOString(),
+        queued: false
+      });
     }
 
     if (action === 'cut') {
