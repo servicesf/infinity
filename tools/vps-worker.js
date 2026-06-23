@@ -25,7 +25,8 @@ const config = {
   mikrotikUser: process.env.MIKROTIK_USER || 'api_wisp',
   mikrotikPassword: process.env.MIKROTIK_PASSWORD,
   dryRun: String(process.env.WORKER_DRY_RUN || 'true').toLowerCase() !== 'false',
-  intervalMs: Number(process.env.WORKER_INTERVAL_MS || 30000)
+  intervalMs: Number(process.env.WORKER_INTERVAL_MS || 30000),
+  onlyPppoe: String(process.env.WORKER_ONLY_PPPOE || '').trim()
 };
 
 function requireEnv(name, value) {
@@ -170,10 +171,14 @@ async function runCommand(router, action, payload) {
   const pppoe = payload.pppoe;
   const queue = payload.queue || pppoe;
   if (!pppoe) throw new Error('Accion sin usuario PPPoE.');
+  if (config.onlyPppoe && pppoe !== config.onlyPppoe) {
+    console.log(`Omitido por WORKER_ONLY_PPPOE=${config.onlyPppoe}: ${pppoe}`);
+    return { skipped: true };
+  }
 
   if (config.dryRun) {
     console.log(`[DRY_RUN] ${router.name}: ${action} ${pppoe}`);
-    return;
+    return { dryRun: true };
   }
 
   const api = new RouterOsApi({
@@ -226,7 +231,8 @@ async function processPendingActions() {
         method: 'PATCH',
         body: JSON.stringify({ status: 'running' })
       });
-      await runCommand(action.routers, action.action, action.payload || {});
+      const result = await runCommand(action.routers, action.action, action.payload || {});
+      if (result?.skipped) continue;
       await supabase(`router_actions?id=eq.${action.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'done', processed_at: new Date().toISOString(), error: null })
@@ -250,10 +256,11 @@ async function processExpiredCustomers() {
 
   for (const customer of customers || []) {
     try {
-      await runCommand(customer.routers, 'cut', {
+      const result = await runCommand(customer.routers, 'cut', {
         pppoe: customer.pppoe_user,
         queue: customer.queue_name || customer.pppoe_user
       });
+      if (result?.skipped) continue;
       if (config.dryRun) continue;
 
       await supabase(`customers?id=eq.${customer.id}`, {
@@ -277,7 +284,7 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
-  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms`);
+  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'}`);
   await tick();
   setInterval(() => tick().catch(error => console.error(error.message)), config.intervalMs);
 }

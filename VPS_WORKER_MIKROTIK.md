@@ -15,6 +15,7 @@ MIKROTIK_PASSWORD=CLAVE_API_CON_WRITE
 
 WORKER_DRY_RUN=true
 WORKER_INTERVAL_MS=30000
+WORKER_ONLY_PPPOE=
 ```
 
 El usuario `api_wisp` debe tener permiso `read,write,api`, porque este worker si ejecutara cortes y activaciones cuando lo activemos.
@@ -34,9 +35,12 @@ Solo despues de probar con un usuario PPPoE de prueba:
 
 ```env
 WORKER_DRY_RUN=false
+WORKER_ONLY_PPPOE=prueba
 ```
 
 Luego reinicias el worker.
+
+Cuando confirmes que corta solo `prueba`, quitas `WORKER_ONLY_PPPOE` para produccion.
 
 ## Como corta automaticamente
 
