@@ -26,7 +26,11 @@ const config = {
   mikrotikPassword: process.env.MIKROTIK_PASSWORD,
   dryRun: String(process.env.WORKER_DRY_RUN || 'true').toLowerCase() !== 'false',
   intervalMs: Number(process.env.WORKER_INTERVAL_MS || 30000),
-  onlyPppoe: String(process.env.WORKER_ONLY_PPPOE || '').trim()
+  onlyPppoe: String(process.env.WORKER_ONLY_PPPOE || '').trim(),
+  syncWinboxRecharges: String(process.env.WORKER_SYNC_WINBOX_RECHARGES || 'false').toLowerCase() === 'true',
+  syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
+  rechargeDays: Number(process.env.WORKER_RECHARGE_DAYS || 30),
+  rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 6)
 };
 
 function requireEnv(name, value) {
@@ -161,6 +165,27 @@ async function supabase(pathname, options = {}) {
   return data;
 }
 
+function addDaysWithHours(baseDate, days = config.rechargeDays, hours = config.rechargeHours) {
+  const date = new Date(baseDate || Date.now());
+  if (Number.isNaN(date.getTime())) date.setTime(Date.now());
+  date.setDate(date.getDate() + Number(days || 0));
+  date.setHours(date.getHours() + Number(hours || 0));
+  return date.toISOString();
+}
+
+async function getMikrotikApi(router) {
+  const api = new RouterOsApi({
+    host: router.vpn_host,
+    port: router.api_port || 8728,
+    tls: router.api_tls === true,
+    user: config.mikrotikUser,
+    password: config.mikrotikPassword
+  });
+  await api.connect();
+  await api.login();
+  return api;
+}
+
 async function findIds(api, command, field, value) {
   if (!value) return [];
   const replies = await api.talk([command, `?${field}=${value}`, '=.proplist=.id,name,disabled']);
@@ -181,16 +206,8 @@ async function runCommand(router, action, payload) {
     return { dryRun: true };
   }
 
-  const api = new RouterOsApi({
-    host: router.vpn_host,
-    port: router.api_port || 8728,
-    tls: router.api_tls === true,
-    user: config.mikrotikUser,
-    password: config.mikrotikPassword
-  });
-  await api.connect();
+  const api = await getMikrotikApi(router);
   try {
-    await api.login();
     const secretIds = await findIds(api, '/ppp/secret/print', 'name', pppoe);
     const queueIds = await findIds(api, '/queue/simple/print', 'name', queue);
 
@@ -274,7 +291,103 @@ async function processExpiredCustomers() {
   }
 }
 
+async function listRouterSecrets(router) {
+  const api = await getMikrotikApi(router);
+  try {
+    const replies = await api.talk([
+      '/ppp/secret/print',
+      '?service=pppoe',
+      '=.proplist=name,disabled'
+    ]);
+    return replies.map(parseSentence).filter(item => item.name);
+  } finally {
+    api.close();
+  }
+}
+
+async function syncRouterFromWinbox(router) {
+  const secrets = await listRouterSecrets(router);
+  const secretByName = new Map(secrets.map(secret => [secret.name, secret]));
+  const customers = await supabase(
+    `customers?select=*&router_id=eq.${router.id}&not.pppoe_user=is.null`,
+    { method: 'GET', prefer: '' }
+  );
+
+  for (const customer of customers || []) {
+    const secret = secretByName.get(customer.pppoe_user);
+    if (!secret) continue;
+    if (config.onlyPppoe && customer.pppoe_user !== config.onlyPppoe) continue;
+
+    const mikrotikEnabled = secret.disabled !== 'true';
+    const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
+
+    if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
+      const paidUntil = addDaysWithHours(new Date().toISOString());
+      if (config.dryRun) {
+        console.log(`[DRY_RUN] Recarga WinBox detectada: ${customer.pppoe_user} hasta ${paidUntil}`);
+        continue;
+      }
+
+      await supabase('payments', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_id: customer.id,
+          amount: Number(customer.monthly_price || 0),
+          method: 'winbox',
+          reference: 'Recarga detectada por PPPoE habilitado en WinBox',
+          status: 'confirmado',
+          paid_at: new Date().toISOString(),
+          service_days: config.rechargeDays,
+          extra_hours: config.rechargeHours
+        })
+      });
+
+      await supabase(`customers?id=eq.${customer.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'activo',
+          paid_until: paidUntil,
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      console.log(`Recarga WinBox sincronizada: ${customer.pppoe_user} hasta ${paidUntil}`);
+      continue;
+    }
+
+    if (config.syncWinboxCuts && !mikrotikEnabled && customer.status !== 'cortado') {
+      if (config.dryRun) {
+        console.log(`[DRY_RUN] Corte WinBox detectado: ${customer.pppoe_user}`);
+        continue;
+      }
+
+      await supabase(`customers?id=eq.${customer.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'cortado',
+          updated_at: new Date().toISOString()
+        })
+      });
+
+      console.log(`Corte WinBox sincronizado: ${customer.pppoe_user}`);
+    }
+  }
+}
+
+async function syncWinboxChanges() {
+  if (!config.syncWinboxRecharges && !config.syncWinboxCuts) return;
+  const routers = await supabase('routers?select=*&active=eq.true', { method: 'GET', prefer: '' });
+  for (const router of routers || []) {
+    try {
+      await syncRouterFromWinbox(router);
+    } catch (error) {
+      console.error(`Sync WinBox fallo ${router.name}: ${error.message}`);
+    }
+  }
+}
+
 async function tick() {
+  await syncWinboxChanges();
   await processPendingActions();
   await processExpiredCustomers();
 }
@@ -284,7 +397,7 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
-  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'}`);
+  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'}`);
   await tick();
   setInterval(() => tick().catch(error => console.error(error.message)), config.intervalMs);
 }

@@ -16,6 +16,10 @@ MIKROTIK_PASSWORD=CLAVE_API_CON_WRITE
 WORKER_DRY_RUN=true
 WORKER_INTERVAL_MS=30000
 WORKER_ONLY_PPPOE=
+WORKER_SYNC_WINBOX_RECHARGES=false
+WORKER_SYNC_WINBOX_CUTS=false
+WORKER_RECHARGE_DAYS=30
+WORKER_RECHARGE_HOURS=6
 ```
 
 El usuario `api_wisp` debe tener permiso `read,write,api`, porque este worker si ejecutara cortes y activaciones cuando lo activemos.
@@ -54,3 +58,26 @@ Cuando confirmes que corta solo `prueba`, quitas `WORKER_ONLY_PPPOE` para produc
 5. Marca el cliente como `cortado` en Supabase.
 
 Los clientes sin fecha no se cortan.
+
+## Recargas hechas desde WinBox
+
+Si quieres que al habilitar un PPPoE en WinBox el panel lo tome como recarga de 30 dias + 6 horas:
+
+```env
+WORKER_SYNC_WINBOX_RECHARGES=true
+WORKER_RECHARGE_DAYS=30
+WORKER_RECHARGE_HOURS=6
+```
+
+Regla:
+
+- Si en el panel esta `cortado` o `vencido`
+- y en MikroTik el PPPoE aparece habilitado
+- entonces el worker registra pago metodo `winbox`
+- y pone vencimiento `ahora + 30 dias + 6 horas`
+
+Para alinear cortes hechos en WinBox:
+
+```env
+WORKER_SYNC_WINBOX_CUTS=true
+```
