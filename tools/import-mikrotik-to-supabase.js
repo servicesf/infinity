@@ -30,9 +30,14 @@ const config = {
   routerCode: process.env.ROUTER_CODE || 'rb4011-fibra',
   routerName: process.env.ROUTER_NAME || 'RB4011 Fibra',
   routerKind: process.env.ROUTER_KIND || 'fibra',
+  importSource: process.env.IMPORT_SOURCE || '',
   setInitialDays: String(process.env.IMPORT_SET_INITIAL_DAYS || 'false').toLowerCase() === 'true',
   initialDays: Number(process.env.IMPORT_INITIAL_DAYS || 30)
 };
+
+if (!config.importSource) {
+  config.importSource = config.routerKind === 'inalambrico' ? 'queues' : 'pppoe';
+}
 
 const dryRun = process.argv.includes('--dry-run');
 
@@ -180,6 +185,48 @@ function planInfo(profile = '') {
   return plans[clean] || { name: clean || 'Plan sin nombre', price: 0 };
 }
 
+function speedToMbps(value = '') {
+  const clean = String(value).trim().toLowerCase();
+  if (!clean || clean === '0') return 0;
+  const number = Number.parseFloat(clean.replace(/[a-z]/g, ''));
+  if (!Number.isFinite(number)) return 0;
+  if (clean.endsWith('k')) return Math.round(number / 1000);
+  if (clean.endsWith('m')) return Math.round(number);
+  if (number >= 1000000) return Math.round(number / 1000000);
+  if (number >= 1000) return Math.round(number / 1000);
+  return Math.round(number);
+}
+
+function queuePlanInfo(maxLimit = '') {
+  const parts = String(maxLimit || '').split('/');
+  const upload = speedToMbps(parts[0]);
+  const download = speedToMbps(parts[1] || parts[0]);
+  const speed = Math.max(upload, download);
+  const prices = {
+    10: 95,
+    25: 120,
+    40: 150,
+    50: 150,
+    100: 200,
+    200: 300
+  };
+  return {
+    name: speed ? `Inalambrico ${speed} Mbps` : 'Inalambrico',
+    price: prices[speed] || 0
+  };
+}
+
+function cleanQueueTarget(target = '') {
+  return String(target)
+    .split(',')[0]
+    .trim()
+    .replace(/\/\d+$/, '');
+}
+
+function looksLikeCi(value = '') {
+  return /^[0-9A-Za-z-]{5,20}$/.test(String(value).trim());
+}
+
 async function listSecrets() {
   const api = new RouterOsApi({
     host: config.mikrotikHost,
@@ -196,6 +243,28 @@ async function listSecrets() {
       '/ppp/secret/print',
       '?service=pppoe',
       '=.proplist=name,password,profile,disabled,service,comment,remote-address'
+    ]);
+    return replies.map(parseSentence).filter(item => item.name);
+  } finally {
+    api.close();
+  }
+}
+
+async function listQueues() {
+  const api = new RouterOsApi({
+    host: config.mikrotikHost,
+    port: config.mikrotikPort,
+    user: config.mikrotikUser,
+    password: config.mikrotikPassword,
+    tls: config.mikrotikTls
+  });
+
+  await api.connect();
+  try {
+    await api.login();
+    const replies = await api.talk([
+      '/queue/simple/print',
+      '=.proplist=name,target,max-limit,disabled,comment'
     ]);
     return replies.map(parseSentence).filter(item => item.name);
   } finally {
@@ -297,19 +366,62 @@ async function upsertCustomers(router, secrets) {
   return { imported, skipped };
 }
 
+async function upsertQueueCustomers(router, queues) {
+  let imported = 0;
+  let skipped = 0;
+
+  for (const queue of queues) {
+    const ip = cleanQueueTarget(queue.target);
+    const ci = looksLikeCi(queue.comment) ? String(queue.comment).trim() : (ip || queue.name);
+    if (!ci) {
+      skipped += 1;
+      continue;
+    }
+
+    const plan = queuePlanInfo(queue['max-limit']);
+    const paidUntil = initialPaidUntil(queue);
+    const customer = {
+      router_id: router.id,
+      full_name: queue.name,
+      ci,
+      sector: config.routerKind,
+      plan_name: plan.name,
+      monthly_price: plan.price,
+      pppoe_user: null,
+      queue_name: queue.name,
+      ip_address: ip || null,
+      status: queue.disabled === 'true' ? 'cortado' : 'activo',
+      updated_at: new Date().toISOString()
+    };
+
+    if (paidUntil) customer.paid_until = paidUntil;
+
+    await supabase('customers?on_conflict=ci', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify([customer])
+    });
+    imported += 1;
+  }
+
+  return { imported, skipped };
+}
+
 async function main() {
   requireEnv('MIKROTIK_HOST', config.mikrotikHost);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
   requireEnv('SUPABASE_URL', config.supabaseUrl);
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
 
-  console.log(`Leyendo MikroTik ${config.routerName} (${config.mikrotikHost}:${config.mikrotikPort})...`);
-  const secrets = await listSecrets();
-  const enabled = secrets.filter(item => item.disabled !== 'true').length;
-  const disabled = secrets.length - enabled;
-  const withoutCi = secrets.filter(item => !String(item.password || '').trim()).length;
+  console.log(`Leyendo MikroTik ${config.routerName} (${config.mikrotikHost}:${config.mikrotikPort}) modo ${config.importSource}...`);
+  const items = config.importSource === 'queues' ? await listQueues() : await listSecrets();
+  const enabled = items.filter(item => item.disabled !== 'true').length;
+  const disabled = items.length - enabled;
+  const withoutCi = config.importSource === 'queues'
+    ? items.filter(item => !cleanQueueTarget(item.target) && !item.name).length
+    : items.filter(item => !String(item.password || '').trim()).length;
 
-  console.log(`Encontrados: ${secrets.length} PPPoE | activos: ${enabled} | cortados: ${disabled} | sin CI/password: ${withoutCi}`);
+  console.log(`Encontrados: ${items.length} ${config.importSource === 'queues' ? 'queues' : 'PPPoE'} | activos: ${enabled} | cortados: ${disabled} | sin CI/IP: ${withoutCi}`);
 
   if (dryRun) {
     console.log('Modo prueba: no se escribio nada en Supabase.');
@@ -317,7 +429,9 @@ async function main() {
   }
 
   const router = await upsertRouter();
-  const result = await upsertCustomers(router, secrets);
+  const result = config.importSource === 'queues'
+    ? await upsertQueueCustomers(router, items)
+    : await upsertCustomers(router, items);
   console.log(`Importacion lista: ${result.imported} clientes guardados, ${result.skipped} omitidos.`);
 }
 

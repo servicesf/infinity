@@ -93,6 +93,8 @@ export default async function handler(req, res) {
         action: 'payment',
         status: 'pending',
         payload: {
+          pppoe: customer?.pppoe_user || null,
+          queue: customer?.queue_name || customer?.pppoe_user || null,
           payment_id: payment.id,
           paid_until: paidUntil,
           amount: payment.amount,

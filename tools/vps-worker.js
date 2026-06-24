@@ -195,24 +195,28 @@ async function findIds(api, command, field, value) {
 async function runCommand(router, action, payload) {
   const pppoe = payload.pppoe;
   const queue = payload.queue || pppoe;
-  if (!pppoe) throw new Error('Accion sin usuario PPPoE.');
-  if (config.onlyPppoe && pppoe !== config.onlyPppoe) {
-    console.log(`Omitido por WORKER_ONLY_PPPOE=${config.onlyPppoe}: ${pppoe}`);
+  const target = pppoe || queue;
+  if (!target) throw new Error('Accion sin PPPoE ni queue.');
+  if (config.onlyPppoe && target !== config.onlyPppoe) {
+    console.log(`Omitido por WORKER_ONLY_PPPOE=${config.onlyPppoe}: ${target}`);
     return { skipped: true };
   }
 
   if (config.dryRun) {
-    console.log(`[DRY_RUN] ${router.name}: ${action} ${pppoe}`);
+    console.log(`[DRY_RUN] ${router.name}: ${action} ${target}`);
     return { dryRun: true };
   }
 
   const api = await getMikrotikApi(router);
   try {
-    const secretIds = await findIds(api, '/ppp/secret/print', 'name', pppoe);
+    const secretIds = pppoe ? await findIds(api, '/ppp/secret/print', 'name', pppoe) : [];
     const queueIds = await findIds(api, '/queue/simple/print', 'name', queue);
+    if (!secretIds.length && !queueIds.length) {
+      throw new Error(`No se encontro PPPoE/queue en MikroTik: ${target}`);
+    }
 
     if (action === 'cut') {
-      const activeIds = await findIds(api, '/ppp/active/print', 'name', pppoe);
+      const activeIds = pppoe ? await findIds(api, '/ppp/active/print', 'name', pppoe) : [];
       for (const id of secretIds) await api.talk(['/ppp/secret/disable', `=.id=${id}`]);
       for (const id of activeIds) await api.talk(['/ppp/active/remove', `=.id=${id}`]);
       for (const id of queueIds) await api.talk(['/queue/simple/disable', `=.id=${id}`]);
@@ -284,9 +288,9 @@ async function processExpiredCustomers() {
         method: 'PATCH',
         body: JSON.stringify({ status: 'cortado', updated_at: new Date().toISOString() })
       });
-      console.log(`Corte automatico listo: ${customer.pppoe_user}`);
+      console.log(`Corte automatico listo: ${customer.pppoe_user || customer.queue_name}`);
     } catch (error) {
-      console.error(`Corte automatico fallo ${customer.pppoe_user}: ${error.message}`);
+      console.error(`Corte automatico fallo ${customer.pppoe_user || customer.queue_name}: ${error.message}`);
     }
   }
 }
@@ -305,26 +309,44 @@ async function listRouterSecrets(router) {
   }
 }
 
+async function listRouterQueues(router) {
+  const api = await getMikrotikApi(router);
+  try {
+    const replies = await api.talk([
+      '/queue/simple/print',
+      '=.proplist=name,disabled,target'
+    ]);
+    return replies.map(parseSentence).filter(item => item.name);
+  } finally {
+    api.close();
+  }
+}
+
 async function syncRouterFromWinbox(router) {
   const secrets = await listRouterSecrets(router);
+  const queues = await listRouterQueues(router);
   const secretByName = new Map(secrets.map(secret => [secret.name, secret]));
+  const queueByName = new Map(queues.map(queue => [queue.name, queue]));
   const customers = await supabase(
-    `customers?select=*&router_id=eq.${router.id}&pppoe_user=not.is.null`,
+    `customers?select=*&router_id=eq.${router.id}`,
     { method: 'GET', prefer: '' }
   );
 
   for (const customer of customers || []) {
-    const secret = secretByName.get(customer.pppoe_user);
-    if (!secret) continue;
-    if (config.onlyPppoe && customer.pppoe_user !== config.onlyPppoe) continue;
+    const secret = customer.pppoe_user ? secretByName.get(customer.pppoe_user) : null;
+    const queue = customer.queue_name ? queueByName.get(customer.queue_name) : null;
+    const deviceItem = secret || queue;
+    const target = customer.pppoe_user || customer.queue_name;
+    if (!deviceItem || !target) continue;
+    if (config.onlyPppoe && target !== config.onlyPppoe) continue;
 
-    const mikrotikEnabled = secret.disabled !== 'true';
+    const mikrotikEnabled = deviceItem.disabled !== 'true';
     const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
 
     if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
       const paidUntil = addDaysWithHours(new Date().toISOString());
       if (config.dryRun) {
-        console.log(`[DRY_RUN] Recarga WinBox detectada: ${customer.pppoe_user} hasta ${paidUntil}`);
+        console.log(`[DRY_RUN] Recarga WinBox detectada: ${target} hasta ${paidUntil}`);
         continue;
       }
 
@@ -351,13 +373,13 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      console.log(`Recarga WinBox sincronizada: ${customer.pppoe_user} hasta ${paidUntil}`);
+      console.log(`Recarga WinBox sincronizada: ${target} hasta ${paidUntil}`);
       continue;
     }
 
     if (config.syncWinboxCuts && !mikrotikEnabled && customer.status !== 'cortado') {
       if (config.dryRun) {
-        console.log(`[DRY_RUN] Corte WinBox detectado: ${customer.pppoe_user}`);
+        console.log(`[DRY_RUN] Corte WinBox detectado: ${target}`);
         continue;
       }
 
@@ -369,7 +391,7 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      console.log(`Corte WinBox sincronizado: ${customer.pppoe_user}`);
+      console.log(`Corte WinBox sincronizado: ${target}`);
     }
   }
 }

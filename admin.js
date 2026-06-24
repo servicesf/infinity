@@ -220,6 +220,9 @@ function renderClients() {
     const selected = client.id === state.selectedId ? 'selected' : '';
     const status = getEffectiveStatus(client);
     const countdown = countdownParts(client);
+    const accessLabel = client.pppoe
+      ? `PPPoE ${client.pppoe}`
+      : `Queue ${client.queue || '-'}${client.ip ? ` · IP ${client.ip}` : ''}`;
     return `
       <tr class="${selected}" data-id="${client.id}">
         <td>
@@ -228,7 +231,7 @@ function renderClients() {
         </td>
         <td>
           <strong>${client.plan}</strong>
-          <span>${client.sector} · PPPoE ${client.pppoe || '-'}</span>
+          <span>${client.sector} · ${accessLabel}</span>
         </td>
         <td>
           <strong class="${countdown.tone}">${countdown.label}</strong>
@@ -256,6 +259,8 @@ function renderDetail() {
   const status = getEffectiveStatus(client);
   const countdown = countdownParts(client);
   const payments = client.historial || [];
+  const accessTitle = client.pppoe ? 'PPPoE' : 'Queue/IP';
+  const accessValue = client.pppoe || `${client.queue || '-'}${client.ip ? ` · ${client.ip}` : ''}`;
   els.detail.innerHTML = `
     <div class="detail-head">
       <div>
@@ -273,7 +278,7 @@ function renderDetail() {
       </div>
       <div class="detail-item"><span>Mensualidad</span><strong>${formatMoney(client.precio)}</strong></div>
       <div class="detail-item"><span>Plan</span><strong>${client.plan}</strong></div>
-      <div class="detail-item"><span>PPPoE</span><strong>${client.pppoe || '-'}</strong></div>
+      <div class="detail-item"><span>${accessTitle}</span><strong>${accessValue}</strong></div>
       <div class="detail-item"><span>Router</span><strong>${client.router?.name || '-'}</strong></div>
       <div class="detail-item"><span>Corte auto</span><strong>${client.autoCutEnabled ? 'Activado' : 'No'}</strong></div>
     </div>
@@ -377,7 +382,7 @@ function openClientDialog(client = null) {
 
 function openScheduleDialog(client) {
   document.getElementById('scheduleClientId').value = client.id;
-  document.getElementById('scheduleClientName').textContent = `${client.nombre} · PPPoE ${client.pppoe || '-'}`;
+  document.getElementById('scheduleClientName').textContent = `${client.nombre} · ${client.pppoe || client.queue || '-'}`;
   document.getElementById('scheduleDueAt').value = toLocalDateTimeInput(client.dueAt || '');
   document.getElementById('scheduleAutoCut').checked = client.autoCutEnabled !== false;
   els.scheduleDialog.showModal();
