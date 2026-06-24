@@ -309,7 +309,7 @@ async function syncRouterFromWinbox(router) {
   const secrets = await listRouterSecrets(router);
   const secretByName = new Map(secrets.map(secret => [secret.name, secret]));
   const customers = await supabase(
-    `customers?select=*&router_id=eq.${router.id}&not.pppoe_user=is.null`,
+    `customers?select=*&router_id=eq.${router.id}&pppoe_user=not.is.null`,
     { method: 'GET', prefer: '' }
   );
 
