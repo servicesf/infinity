@@ -390,7 +390,7 @@ async function upsertQueueCustomers(router, queues) {
       pppoe_user: null,
       queue_name: queue.name,
       ip_address: ip || null,
-      status: queue.disabled === 'true' ? 'cortado' : 'activo',
+      status: queue.disabled === 'true' || String(queue['max-limit'] || '').toLowerCase() === '64k/64k' ? 'cortado' : 'activo',
       updated_at: new Date().toISOString()
     };
 

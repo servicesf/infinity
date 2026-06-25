@@ -20,6 +20,7 @@ async function queueAction(customer, action, payload = {}) {
       payload: {
         pppoe: customer.pppoe_user,
         queue: customer.queue_name || customer.pppoe_user,
+        ip: customer.ip_address,
         ...payload
       }
     })

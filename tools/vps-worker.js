@@ -192,6 +192,61 @@ async function findIds(api, command, field, value) {
   return replies.map(parseSentence).map(item => item['.id']).filter(Boolean);
 }
 
+function isQueueCut(queue) {
+  return String(queue?.['max-limit'] || '').toLowerCase() === '64k/64k';
+}
+
+function appendLimitMarker(comment = '', maxLimit = '') {
+  const clean = String(comment || '').replace(/\s*\[infinit-max-limit=[^\]]+\]/g, '').trim();
+  return `${clean ? `${clean} ` : ''}[infinit-max-limit=${maxLimit || '0/0'}]`;
+}
+
+function extractLimitMarker(comment = '') {
+  const match = String(comment || '').match(/\[infinit-max-limit=([^\]]+)\]/);
+  return match ? match[1] : '';
+}
+
+function removeLimitMarker(comment = '') {
+  return String(comment || '').replace(/\s*\[infinit-max-limit=[^\]]+\]/g, '').trim();
+}
+
+async function findQueueItems(api, name) {
+  if (!name) return [];
+  const replies = await api.talk([
+    '/queue/simple/print',
+    `?name=${name}`,
+    '=.proplist=.id,name,disabled,max-limit,comment,target'
+  ]);
+  return replies.map(parseSentence).filter(item => item['.id']);
+}
+
+async function cutQueueBySpeed(api, queueItems) {
+  for (const queueItem of queueItems) {
+    const comment = appendLimitMarker(queueItem.comment, queueItem['max-limit']);
+    await api.talk([
+      '/queue/simple/set',
+      `=.id=${queueItem['.id']}`,
+      '=disabled=false',
+      '=max-limit=64k/64k',
+      `=comment=${comment}`
+    ]);
+  }
+}
+
+async function restoreQueueSpeed(api, queueItems) {
+  for (const queueItem of queueItems) {
+    const originalLimit = extractLimitMarker(queueItem.comment);
+    const words = [
+      '/queue/simple/set',
+      `=.id=${queueItem['.id']}`,
+      '=disabled=false'
+    ];
+    if (originalLimit) words.push(`=max-limit=${originalLimit}`);
+    words.push(`=comment=${removeLimitMarker(queueItem.comment)}`);
+    await api.talk(words);
+  }
+}
+
 async function runCommand(router, action, payload) {
   const pppoe = payload.pppoe;
   const queue = payload.queue || pppoe;
@@ -210,8 +265,9 @@ async function runCommand(router, action, payload) {
   const api = await getMikrotikApi(router);
   try {
     const secretIds = pppoe ? await findIds(api, '/ppp/secret/print', 'name', pppoe) : [];
-    const queueIds = await findIds(api, '/queue/simple/print', 'name', queue);
-    if (!secretIds.length && !queueIds.length) {
+    const queueItems = await findQueueItems(api, queue);
+    const queueIds = queueItems.map(item => item['.id']).filter(Boolean);
+    if (!secretIds.length && !queueItems.length) {
       throw new Error(`No se encontro PPPoE/queue en MikroTik: ${target}`);
     }
 
@@ -219,13 +275,17 @@ async function runCommand(router, action, payload) {
       const activeIds = pppoe ? await findIds(api, '/ppp/active/print', 'name', pppoe) : [];
       for (const id of secretIds) await api.talk(['/ppp/secret/disable', `=.id=${id}`]);
       for (const id of activeIds) await api.talk(['/ppp/active/remove', `=.id=${id}`]);
-      for (const id of queueIds) await api.talk(['/queue/simple/disable', `=.id=${id}`]);
+      if (pppoe) {
+        for (const id of queueIds) await api.talk(['/queue/simple/disable', `=.id=${id}`]);
+      } else {
+        await cutQueueBySpeed(api, queueItems);
+      }
       return;
     }
 
     if (action === 'enable' || action === 'payment') {
       for (const id of secretIds) await api.talk(['/ppp/secret/enable', `=.id=${id}`]);
-      for (const id of queueIds) await api.talk(['/queue/simple/enable', `=.id=${id}`]);
+      await restoreQueueSpeed(api, queueItems);
       return;
     }
 
@@ -279,7 +339,8 @@ async function processExpiredCustomers() {
     try {
       const result = await runCommand(customer.routers, 'cut', {
         pppoe: customer.pppoe_user,
-        queue: customer.queue_name || customer.pppoe_user
+        queue: customer.queue_name || customer.pppoe_user,
+        ip: customer.ip_address
       });
       if (result?.skipped) continue;
       if (config.dryRun) continue;
@@ -314,7 +375,7 @@ async function listRouterQueues(router) {
   try {
     const replies = await api.talk([
       '/queue/simple/print',
-      '=.proplist=name,disabled,target'
+      '=.proplist=name,disabled,target,max-limit'
     ]);
     return replies.map(parseSentence).filter(item => item.name);
   } finally {
@@ -340,7 +401,7 @@ async function syncRouterFromWinbox(router) {
     if (!deviceItem || !target) continue;
     if (config.onlyPppoe && target !== config.onlyPppoe) continue;
 
-    const mikrotikEnabled = deviceItem.disabled !== 'true';
+    const mikrotikEnabled = deviceItem.disabled !== 'true' && !isQueueCut(deviceItem);
     const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
 
     if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
@@ -373,6 +434,12 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
+      await runCommand(router, 'payment', {
+        pppoe: customer.pppoe_user,
+        queue: customer.queue_name || customer.pppoe_user,
+        ip: customer.ip_address
+      });
+
       console.log(`Recarga WinBox sincronizada: ${target} hasta ${paidUntil}`);
       continue;
     }
@@ -389,6 +456,12 @@ async function syncRouterFromWinbox(router) {
           status: 'cortado',
           updated_at: new Date().toISOString()
         })
+      });
+
+      await runCommand(router, 'cut', {
+        pppoe: customer.pppoe_user,
+        queue: customer.queue_name || customer.pppoe_user,
+        ip: customer.ip_address
       });
 
       console.log(`Corte WinBox sincronizado: ${target}`);
