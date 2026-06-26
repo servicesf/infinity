@@ -2,6 +2,7 @@ import { requireAdmin } from './_adminAuth.js';
 import { supabaseFetch } from './_supabase.js';
 
 function normalizeCustomer(row, payments = []) {
+  const isCut = row.status === 'cortado';
   return {
     id: row.id,
     nombre: row.full_name,
@@ -14,8 +15,8 @@ function normalizeCustomer(row, payments = []) {
     queue: row.queue_name || '',
     ip: row.ip_address || '',
     estado: row.status,
-    dueAt: row.paid_until,
-    pagadoHasta: row.paid_until ? String(row.paid_until).slice(0, 10) : '',
+    dueAt: isCut ? null : row.paid_until,
+    pagadoHasta: isCut || !row.paid_until ? '' : String(row.paid_until).slice(0, 10),
     autoCutEnabled: row.auto_cut_enabled,
     routerId: row.router_id,
     router: row.routers ? {

@@ -37,7 +37,7 @@ export async function supabaseFetch(path, options = {}) {
   return data;
 }
 
-export function addDaysWithHours(baseDate, days = 30, hours = 6) {
+export function addDaysWithHours(baseDate, days = 30, hours = 3) {
   const date = new Date(baseDate || Date.now());
   if (Number.isNaN(date.getTime())) date.setTime(Date.now());
   date.setDate(date.getDate() + Number(days || 0));

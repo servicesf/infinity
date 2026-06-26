@@ -30,7 +30,7 @@ const config = {
   syncWinboxRecharges: String(process.env.WORKER_SYNC_WINBOX_RECHARGES || 'false').toLowerCase() === 'true',
   syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
   rechargeDays: Number(process.env.WORKER_RECHARGE_DAYS || 30),
-  rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 6)
+  rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 3)
 };
 
 function requireEnv(name, value) {
@@ -347,7 +347,11 @@ async function processExpiredCustomers() {
 
       await supabase(`customers?id=eq.${customer.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'cortado', updated_at: new Date().toISOString() })
+        body: JSON.stringify({
+          status: 'cortado',
+          paid_until: null,
+          updated_at: new Date().toISOString()
+        })
       });
       console.log(`Corte automatico listo: ${customer.pppoe_user || customer.queue_name}`);
     } catch (error) {
@@ -444,7 +448,7 @@ async function syncRouterFromWinbox(router) {
       continue;
     }
 
-    if (config.syncWinboxCuts && !mikrotikEnabled && customer.status !== 'cortado') {
+    if (config.syncWinboxCuts && !mikrotikEnabled && (customer.status !== 'cortado' || customer.paid_until)) {
       if (config.dryRun) {
         console.log(`[DRY_RUN] Corte WinBox detectado: ${target}`);
         continue;
@@ -454,6 +458,7 @@ async function syncRouterFromWinbox(router) {
         method: 'PATCH',
         body: JSON.stringify({
           status: 'cortado',
+          paid_until: null,
           updated_at: new Date().toISOString()
         })
       });

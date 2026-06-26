@@ -1,6 +1,7 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
 
 function normalizeCustomer(row, payments = []) {
+  const isCut = row.status === 'cortado';
   return {
     id: row.id,
     nombre: row.full_name,
@@ -10,7 +11,7 @@ function normalizeCustomer(row, payments = []) {
     plan: row.plan_name,
     precio: Number(row.monthly_price || 0),
     estado: row.status,
-    pagadoHasta: row.paid_until,
+    pagadoHasta: isCut ? '' : row.paid_until,
     autoCorte: row.auto_cut_enabled,
     pppoe: row.pppoe_user,
     ultimosPagos: payments.map(payment => ({

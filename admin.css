@@ -810,58 +810,177 @@
   }
 
   .admin-topbar {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 10px 14px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
   }
 
-  .admin-top-actions,
+  .admin-topbar .brand {
+    gap: 8px;
+    flex: 0 1 122px;
+    min-width: 0;
+  }
+
+  .admin-topbar .brand img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .admin-topbar .brand strong {
+    font-size: 0.95rem;
+  }
+
+  .admin-topbar .brand small {
+    display: none;
+  }
+
+  .admin-top-actions {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 5px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
   .filters {
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .admin-app {
-    width: min(100% - 20px, 620px);
-    margin-top: 12px;
+    width: min(100% - 16px, 620px);
+    margin-top: 10px;
+    margin-bottom: 22px;
   }
 
   .admin-panel,
   .income-panel {
-    padding: 14px;
+    padding: 12px;
+    border-radius: 12px;
   }
 
-  .panel-head p {
-    font-size: 0.95rem;
+  .panel-head {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .panel-head h2 {
+    font-size: 1.35rem;
+  }
+
+  .panel-head p,
+  .income-panel p {
+    font-size: 0.9rem;
+    line-height: 1.2;
   }
 
   .admin-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
   .admin-stats article {
-    padding: 13px;
+    padding: 10px;
+    border-radius: 12px;
   }
 
   .admin-stats strong {
-    font-size: 1.55rem;
+    font-size: 1.42rem;
+    margin: 5px 0 3px;
+  }
+
+  .admin-stats span,
+  .admin-stats small {
+    font-size: 0.76rem;
+    line-height: 1.1;
+  }
+
+  .admin-stats article:nth-child(5) {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  .admin-stats article:nth-child(5) strong {
+    grid-row: span 2;
+    margin: 0;
+    font-size: 1.65rem;
   }
 
   .filters input,
-  .filters select,
-  .admin-top-actions .btn,
-  .bridge-state {
+  .filters select {
     width: 100%;
+    min-height: 40px;
+    border-radius: 12px;
+    font-size: 0.9rem;
   }
 
-  .tools-menu,
+  .filters input {
+    grid-column: span 2;
+  }
+
+  .bridge-state {
+    width: 38px;
+    flex: 0 0 38px;
+    min-height: 38px;
+    justify-content: center;
+    padding: 0;
+    white-space: nowrap;
+    font-size: 0;
+  }
+
+  .bridge-state i {
+    font-size: 0.75rem;
+  }
+
+  .admin-top-actions .btn {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 999px;
+    overflow: hidden;
+    color: transparent;
+    flex: 0 0 38px;
+  }
+
+  .admin-top-actions .btn i {
+    color: var(--ink);
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .tools-menu {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
   .icon-menu-btn {
-    width: 100%;
+    width: 38px;
+    height: 38px;
   }
 
   .tools-dropdown {
-    left: 0;
-    right: auto;
-    width: 100%;
+    position: fixed;
+    top: 68px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
+
+  .client-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .client-detail {
+    order: -1;
   }
 
   .client-table-wrap {
@@ -890,9 +1009,9 @@
 
   .client-table td {
     display: grid;
-    grid-template-columns: 84px 1fr;
-    gap: 10px;
-    padding: 8px 12px;
+    grid-template-columns: 74px 1fr;
+    gap: 8px;
+    padding: 7px 12px;
     border-bottom: 0;
   }
 
@@ -904,19 +1023,69 @@
     text-transform: uppercase;
   }
 
-  .client-row {
+  .client-table tr {
+    position: relative;
     margin-bottom: 10px;
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 39, 94, 0.08);
     overflow: hidden;
   }
 
-  .client-row:hover,
-  .client-row.selected {
+  .client-table tr:hover,
+  .client-table tr.selected {
     background: #fff;
     border-color: #a9ddec;
+  }
+
+  .client-table td:first-child {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    padding: 12px 92px 4px 12px;
+  }
+
+  .client-table td:first-child::before {
+    display: none;
+  }
+
+  .client-table td:first-child strong {
+    font-size: 1.02rem;
+    line-height: 1.08;
+  }
+
+  .client-table td:first-child span {
+    grid-column: 1 / -1;
+  }
+
+  .client-table td:nth-child(2) strong,
+  .client-table td:nth-child(3) strong {
+    font-size: 0.98rem;
+  }
+
+  .client-table td:nth-child(3) {
+    padding-bottom: 12px;
+  }
+
+  .client-table td:nth-child(2) span {
+    display: none;
+  }
+
+  .client-table td:nth-child(4) {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    display: block;
+    width: auto;
+    padding: 0;
+  }
+
+  .client-table td:nth-child(4)::before {
+    display: none;
+  }
+
+  .client-table td > span {
+    font-size: 0.82rem;
   }
 
   .mini-btn {
@@ -937,6 +1106,87 @@
   .income-controls select,
   .income-controls .mini-btn {
     width: 100%;
+  }
+
+  .income-panel {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .income-panel h2 {
+    font-size: 1.18rem;
+  }
+
+  .income-grid {
+    gap: 8px;
+  }
+
+  .income-card {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  .income-card strong {
+    font-size: 1.15rem;
+  }
+
+  .client-detail {
+    min-height: auto;
+    padding: 14px;
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(0, 39, 94, 0.1);
+  }
+
+  .empty-detail {
+    min-height: 140px;
+  }
+
+  .empty-detail i {
+    width: 46px;
+    height: 46px;
+    font-size: 1.15rem;
+  }
+
+  .detail-head {
+    padding-bottom: 11px;
+  }
+
+  .detail-head h3 {
+    font-size: 1.14rem;
+    line-height: 1.05;
+  }
+
+  .detail-head p {
+    margin-top: 3px;
+    font-size: 0.9rem;
+  }
+
+  .detail-summary {
+    margin: 0;
+    padding: 12px;
+  }
+
+  .detail-summary strong {
+    font-size: 1.28rem;
+  }
+
+  .detail-item {
+    padding: 10px;
+  }
+
+  .detail-actions {
+    gap: 8px;
+  }
+
+  .detail-actions .btn {
+    min-height: 46px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+  }
+
+  .payment-history {
+    max-height: 190px;
   }
 
   .chart-row {

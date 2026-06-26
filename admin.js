@@ -117,8 +117,11 @@ function fromLocalDateTimeInput(value) {
 }
 
 function countdownParts(client) {
+  if (client.estado === 'cortado') {
+    return { label: 'Cortado', detail: 'sin vencimiento', tone: 'danger', dateLabel: 'Sin fecha' };
+  }
   const due = new Date(client.dueAt || client.pagadoHasta || '');
-  if (Number.isNaN(due.getTime())) return { label: 'Sin fecha', detail: 'sin vencimiento', tone: '' };
+  if (Number.isNaN(due.getTime())) return { label: 'Sin fecha', detail: 'sin vencimiento', tone: '', dateLabel: 'Sin fecha' };
   const diff = due - new Date();
   const abs = Math.abs(diff);
   const days = Math.floor(abs / 86400000);
@@ -127,7 +130,8 @@ function countdownParts(client) {
   return {
     label: diff < 0 ? 'Vencido' : label,
     detail: diff < 0 ? `vencido hace ${label}` : `${label} restantes`,
-    tone: diff < 0 ? 'danger' : days <= 3 ? 'warning' : ''
+    tone: diff < 0 ? 'danger' : days <= 3 ? 'warning' : '',
+    dateLabel: formatDateTime(client.dueAt)
   };
 }
 
@@ -225,19 +229,19 @@ function renderClients() {
       : `Queue ${client.queue || '-'}${client.ip ? ` · IP ${client.ip}` : ''}`;
     return `
       <tr class="${selected}" data-id="${client.id}">
-        <td>
+        <td data-label="Cliente">
           <strong>${client.nombre}</strong>
           <span>CI ${client.ci || '-'} · ${client.telefono || 'sin telefono'}</span>
         </td>
-        <td>
+        <td data-label="Servicio">
           <strong>${client.plan}</strong>
           <span>${client.sector} · ${accessLabel}</span>
         </td>
-        <td>
+        <td data-label="Vence">
           <strong class="${countdown.tone}">${countdown.label}</strong>
-          <span>${formatDateTime(client.dueAt)}</span>
+          <span>${countdown.dateLabel}</span>
         </td>
-        <td><span class="state-pill ${status}">${status}</span></td>
+        <td data-label="Estado"><span class="state-pill ${status}">${status}</span></td>
       </tr>
     `;
   }).join('');
@@ -261,6 +265,7 @@ function renderDetail() {
   const payments = client.historial || [];
   const accessTitle = client.pppoe ? 'PPPoE' : 'Queue/IP';
   const accessValue = client.pppoe || `${client.queue || '-'}${client.ip ? ` · ${client.ip}` : ''}`;
+  const dueTitle = status === 'cortado' ? 'Servicio' : 'Vence';
   els.detail.innerHTML = `
     <div class="detail-head">
       <div>
@@ -272,9 +277,9 @@ function renderDetail() {
 
     <div class="detail-grid compact">
       <div class="detail-summary ${countdown.tone}">
-        <span>Vence</span>
+        <span>${dueTitle}</span>
         <strong>${countdown.label}</strong>
-        <small>${formatDateTime(client.dueAt)}</small>
+        <small>${countdown.dateLabel}</small>
       </div>
       <div class="detail-item"><span>Mensualidad</span><strong>${formatMoney(client.precio)}</strong></div>
       <div class="detail-item"><span>Plan</span><strong>${client.plan}</strong></div>
@@ -343,7 +348,7 @@ async function performAction(action, options = {}) {
   if (!client) return;
 
   const labels = {
-    recharge: `Recargar 30 dias + 6 horas a ${client.nombre}?`,
+    recharge: `Recargar 30 dias + 3 horas a ${client.nombre}?`,
     'schedule-cut': `Programar corte para ${client.nombre}?`,
     cut: `Marcar corte y mandar accion pendiente para ${client.nombre}?`,
     enable: `Activar y mandar accion pendiente para ${client.nombre}?`
@@ -359,7 +364,7 @@ async function performAction(action, options = {}) {
     })
   });
   await loadData();
-  alert('Accion guardada. La VPS ejecutara el comando MikroTik cuando conectemos el worker.');
+  alert('Accion guardada. La VPS ejecutara el comando MikroTik.');
 }
 
 function openClientDialog(client = null) {
@@ -374,7 +379,7 @@ function openClientDialog(client = null) {
   document.getElementById('clientPppoe').value = client?.pppoe || '';
   document.getElementById('clientQueue').value = client?.queue || client?.pppoe || '';
   document.getElementById('clientIp').value = client?.ip || '';
-  document.getElementById('clientPaidUntil').value = client?.pagadoHasta || new Date().toISOString().slice(0, 10);
+  document.getElementById('clientPaidUntil').value = client?.pagadoHasta || '';
   document.getElementById('clientDueAt').value = toLocalDateTimeInput(client?.dueAt || '');
   document.getElementById('clientAutoCut').checked = client?.autoCutEnabled !== false;
   els.dialog.showModal();

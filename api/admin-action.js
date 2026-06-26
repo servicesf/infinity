@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   if (!requireAdmin(req, res)) return;
 
   try {
-    const { customerId, action, days = 30, hours = 6, amount, note = '', dueAt, autoCutEnabled = true } = req.body || {};
+    const { customerId, action, days = 30, hours = 3, amount, note = '', dueAt, autoCutEnabled = true } = req.body || {};
     if (!customerId || !action) return res.status(400).json({ ok: false, error: 'Faltan datos.' });
 
     const customer = await getCustomer(customerId);
@@ -103,7 +103,11 @@ export default async function handler(req, res) {
     if (action === 'cut') {
       await supabaseFetch(`customers?id=eq.${customer.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'cortado', updated_at: new Date().toISOString() })
+        body: JSON.stringify({
+          status: 'cortado',
+          paid_until: null,
+          updated_at: new Date().toISOString()
+        })
       });
       await queueAction(customer, 'cut', { source: 'admin' });
       return res.status(200).json({ ok: true, queued: 'cut' });

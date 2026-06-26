@@ -350,10 +350,11 @@ async function upsertCustomers(router, secrets) {
       queue_name: secret.name,
       ip_address: secret['remote-address'] || null,
       status: secret.disabled === 'true' ? 'cortado' : 'activo',
+      paid_until: secret.disabled === 'true' ? null : undefined,
       updated_at: new Date().toISOString()
     };
 
-    if (paidUntil) customer.paid_until = paidUntil;
+    if (customer.status !== 'cortado' && paidUntil) customer.paid_until = paidUntil;
 
     await supabase('customers?on_conflict=ci', {
       method: 'POST',
@@ -391,10 +392,11 @@ async function upsertQueueCustomers(router, queues) {
       queue_name: queue.name,
       ip_address: ip || null,
       status: queue.disabled === 'true' || String(queue['max-limit'] || '').toLowerCase() === '64k/64k' ? 'cortado' : 'activo',
+      paid_until: queue.disabled === 'true' || String(queue['max-limit'] || '').toLowerCase() === '64k/64k' ? null : undefined,
       updated_at: new Date().toISOString()
     };
 
-    if (paidUntil) customer.paid_until = paidUntil;
+    if (customer.status !== 'cortado' && paidUntil) customer.paid_until = paidUntil;
 
     await supabase('customers?on_conflict=ci', {
       method: 'POST',

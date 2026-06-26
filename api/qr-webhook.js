@@ -65,7 +65,9 @@ export default async function handler(req, res) {
     const baseDate = customer?.paid_until && new Date(customer.paid_until) > new Date()
       ? customer.paid_until
       : new Date().toISOString();
-    const paidUntil = addDaysWithHours(baseDate, payment.service_days, payment.extra_hours);
+    const serviceDays = payment.service_days ?? 30;
+    const extraHours = payment.extra_hours ?? 3;
+    const paidUntil = addDaysWithHours(baseDate, serviceDays, extraHours);
 
     await supabaseFetch(`payments?id=eq.${payment.id}`, {
       method: 'PATCH',
