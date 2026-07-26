@@ -336,6 +336,33 @@ function setRadiusUserEnabled(username, enabled) {
   }
 }
 
+function getRadiusUserEnabled(username) {
+  if (!/^[A-Za-z0-9_.@-]+$/.test(username)) {
+    throw new Error(`Usuario RADIUS invalido: ${username}`);
+  }
+
+  const filePath = config.radiusAuthorizeFile;
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`No existe el archivo RADIUS: ${filePath}`);
+  }
+
+  const escapedUser = escapeRegExp(username);
+  const content = fs.readFileSync(filePath, 'utf8');
+  const managedBlock = content.match(new RegExp(
+    `^# BEGIN INFINIT MANAGED ${escapedUser}\\r?\\n[\\s\\S]*?^# END INFINIT MANAGED ${escapedUser}$`,
+    'm'
+  ));
+  if (!managedBlock) return null;
+
+  if (new RegExp(`^${escapedUser}\\s+Auth-Type\\s*:=\\s*Reject\\s*$`, 'mi').test(managedBlock[0])) {
+    return false;
+  }
+  if (new RegExp(`^${escapedUser}\\s+Cleartext-Password\\s*:=`, 'mi').test(managedBlock[0])) {
+    return true;
+  }
+  return null;
+}
+
 async function findQueueItems(api, name) {
   if (!name) return [];
   const replies = await api.talk([
@@ -534,16 +561,23 @@ async function syncRouterFromWinbox(router) {
   );
 
   for (const customer of customers || []) {
-    if (isRadiusManagedAccount(router, customer.pppoe_user)) continue;
-
+    const radiusManaged = isRadiusManagedAccount(router, customer.pppoe_user);
+    const radiusEnabled = radiusManaged ? getRadiusUserEnabled(customer.pppoe_user) : null;
     const secret = customer.pppoe_user ? secretByName.get(customer.pppoe_user) : null;
     const queue = customer.queue_name ? queueByName.get(customer.queue_name) : null;
     const deviceItem = secret || queue;
     const target = customer.pppoe_user || customer.queue_name;
-    if (!deviceItem || !target) continue;
+    if (!target) continue;
     if (config.onlyPppoe && target !== config.onlyPppoe) continue;
+    if (radiusManaged && radiusEnabled === null) {
+      console.warn(`No se pudo leer el estado RADIUS administrado de ${target}`);
+      continue;
+    }
+    if (!radiusManaged && !deviceItem) continue;
 
-    const mikrotikEnabled = deviceItem.disabled !== 'true' && !isQueueCut(deviceItem);
+    const mikrotikEnabled = radiusManaged
+      ? radiusEnabled
+      : deviceItem.disabled !== 'true' && !isQueueCut(deviceItem);
     const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
 
     if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
@@ -576,11 +610,13 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      await runCommand(router, 'payment', {
-        pppoe: customer.pppoe_user,
-        queue: customer.queue_name || customer.pppoe_user,
-        ip: customer.ip_address
-      });
+      if (!radiusManaged) {
+        await runCommand(router, 'payment', {
+          pppoe: customer.pppoe_user,
+          queue: customer.queue_name || customer.pppoe_user,
+          ip: customer.ip_address
+        });
+      }
 
       console.log(`Recarga WinBox sincronizada: ${target} hasta ${paidUntil}`);
       continue;
@@ -601,11 +637,13 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      await runCommand(router, 'cut', {
-        pppoe: customer.pppoe_user,
-        queue: customer.queue_name || customer.pppoe_user,
-        ip: customer.ip_address
-      });
+      if (!radiusManaged) {
+        await runCommand(router, 'cut', {
+          pppoe: customer.pppoe_user,
+          queue: customer.queue_name || customer.pppoe_user,
+          ip: customer.ip_address
+        });
+      }
 
       console.log(`Corte WinBox sincronizado: ${target}`);
     }
@@ -625,9 +663,9 @@ async function syncWinboxChanges() {
 }
 
 async function tick() {
-  await syncWinboxChanges();
   await processPendingActions();
   await processExpiredCustomers();
+  await syncWinboxChanges();
 }
 
 async function main() {
