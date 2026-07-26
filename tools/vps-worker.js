@@ -2,6 +2,7 @@ const net = require('net');
 const tls = require('tls');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -19,6 +20,16 @@ function loadEnvFile(filePath) {
 
 loadEnvFile(path.resolve(process.cwd(), '.env.worker'));
 
+function parseJsonObject(value, fallback = {}) {
+  if (!value) return fallback;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const config = {
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -30,7 +41,15 @@ const config = {
   syncWinboxRecharges: String(process.env.WORKER_SYNC_WINBOX_RECHARGES || 'false').toLowerCase() === 'true',
   syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
   rechargeDays: Number(process.env.WORKER_RECHARGE_DAYS || 30),
-  rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 3)
+  rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 3),
+  radiusManagedAccounts: new Set(
+    String(process.env.RADIUS_MANAGED_ACCOUNTS || '')
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean)
+  ),
+  radiusUsers: parseJsonObject(process.env.RADIUS_USERS_JSON),
+  radiusAuthorizeFile: process.env.RADIUS_AUTHORIZE_FILE || '/etc/freeradius/3.0/mods-config/files/authorize'
 };
 
 function requireEnv(name, value) {
@@ -210,6 +229,113 @@ function removeLimitMarker(comment = '') {
   return String(comment || '').replace(/\s*\[infinit-max-limit=[^\]]+\]/g, '').trim();
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escapeRadiusValue(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function isRadiusManagedAccount(router, username) {
+  if (!username) return false;
+  return config.radiusManagedAccounts.has(`${router.code}:${username}`)
+    || config.radiusManagedAccounts.has(`${router.vpn_host}:${username}`);
+}
+
+function buildRadiusUserBlock(username, enabled) {
+  if (!/^[A-Za-z0-9_.@-]+$/.test(username)) {
+    throw new Error(`Usuario RADIUS invalido: ${username}`);
+  }
+
+  const marker = escapeRadiusValue(username);
+  if (!enabled) {
+    return [
+      `# BEGIN INFINIT MANAGED ${marker}`,
+      `${username} Auth-Type := Reject`,
+      `# END INFINIT MANAGED ${marker}`
+    ].join('\n');
+  }
+
+  const settings = config.radiusUsers[username];
+  const password = typeof settings === 'string' ? settings : settings?.password;
+  if (!password) {
+    throw new Error(`Falta password de ${username} en RADIUS_USERS_JSON`);
+  }
+
+  const group = typeof settings === 'object' ? settings.group : '';
+  const rateLimit = typeof settings === 'object' ? settings.rateLimit : '';
+  const replyAttributes = [
+    '    Service-Type = Framed-User',
+    '    Framed-Protocol = PPP'
+  ];
+  if (group) replyAttributes.push(`    Mikrotik-Group = "${escapeRadiusValue(group)}"`);
+  if (rateLimit) replyAttributes.push(`    Mikrotik-Rate-Limit = "${escapeRadiusValue(rateLimit)}"`);
+
+  return [
+    `# BEGIN INFINIT MANAGED ${marker}`,
+    `${username} Cleartext-Password := "${escapeRadiusValue(password)}"`,
+    replyAttributes.join(',\n'),
+    `# END INFINIT MANAGED ${marker}`
+  ].join('\n');
+}
+
+function replaceRadiusUserBlock(content, username, block) {
+  const escapedUser = escapeRegExp(username);
+  const managedBlock = new RegExp(
+    `^# BEGIN INFINIT MANAGED ${escapedUser}\\r?\\n[\\s\\S]*?^# END INFINIT MANAGED ${escapedUser}\\r?\\n?`,
+    'gm'
+  );
+  const legacyStanza = new RegExp(
+    `^${escapedUser}(?:[ \\t]+[^\\r\\n]*)?(?:\\r?\\n[ \\t]+[^\\r\\n]*)*\\r?\\n?`,
+    'gm'
+  );
+  const cleaned = content
+    .replace(managedBlock, '')
+    .replace(legacyStanza, '')
+    .replace(/\s+$/, '');
+  return `${cleaned}\n\n${block}\n`;
+}
+
+function reloadRadius() {
+  execFileSync('/usr/sbin/freeradius', ['-CX'], { stdio: 'pipe' });
+  try {
+    execFileSync('/usr/bin/systemctl', ['reload', 'freeradius'], { stdio: 'pipe' });
+  } catch {
+    execFileSync('/usr/bin/systemctl', ['restart', 'freeradius'], { stdio: 'pipe' });
+  }
+}
+
+function setRadiusUserEnabled(username, enabled) {
+  const filePath = config.radiusAuthorizeFile;
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`No existe el archivo RADIUS: ${filePath}`);
+  }
+
+  const original = fs.readFileSync(filePath, 'utf8');
+  const updated = replaceRadiusUserBlock(original, username, buildRadiusUserBlock(username, enabled));
+  if (updated === original) return;
+
+  const fileStat = fs.statSync(filePath);
+  const mode = fileStat.mode;
+  const tempPath = `${filePath}.infinit-${process.pid}.tmp`;
+  fs.writeFileSync(tempPath, updated, { mode });
+  fs.chownSync(tempPath, fileStat.uid, fileStat.gid);
+  fs.renameSync(tempPath, filePath);
+
+  try {
+    reloadRadius();
+  } catch (error) {
+    fs.writeFileSync(filePath, original, { mode });
+    try {
+      reloadRadius();
+    } catch {
+      // El error original contiene la causa util para el registro del worker.
+    }
+    throw new Error(`No se pudo actualizar FreeRADIUS: ${error.message}`);
+  }
+}
+
 async function findQueueItems(api, name) {
   if (!name) return [];
   const replies = await api.talk([
@@ -251,6 +377,7 @@ async function runCommand(router, action, payload) {
   const pppoe = payload.pppoe;
   const queue = payload.queue || pppoe;
   const target = pppoe || queue;
+  const radiusManaged = isRadiusManagedAccount(router, pppoe);
   if (!target) throw new Error('Accion sin PPPoE ni queue.');
   if (config.onlyPppoe && target !== config.onlyPppoe) {
     console.log(`Omitido por WORKER_ONLY_PPPOE=${config.onlyPppoe}: ${target}`);
@@ -267,12 +394,17 @@ async function runCommand(router, action, payload) {
     const secretIds = pppoe ? await findIds(api, '/ppp/secret/print', 'name', pppoe) : [];
     const queueItems = await findQueueItems(api, queue);
     const queueIds = queueItems.map(item => item['.id']).filter(Boolean);
-    if (!secretIds.length && !queueItems.length) {
+    if (!radiusManaged && !secretIds.length && !queueItems.length) {
       throw new Error(`No se encontro PPPoE/queue en MikroTik: ${target}`);
     }
 
     if (action === 'cut') {
       const activeIds = pppoe ? await findIds(api, '/ppp/active/print', 'name', pppoe) : [];
+      if (radiusManaged) {
+        setRadiusUserEnabled(pppoe, false);
+        for (const id of activeIds) await api.talk(['/ppp/active/remove', `=.id=${id}`]);
+        return;
+      }
       for (const id of secretIds) await api.talk(['/ppp/secret/disable', `=.id=${id}`]);
       for (const id of activeIds) await api.talk(['/ppp/active/remove', `=.id=${id}`]);
       if (pppoe) {
@@ -284,6 +416,10 @@ async function runCommand(router, action, payload) {
     }
 
     if (action === 'enable' || action === 'payment') {
+      if (radiusManaged) {
+        setRadiusUserEnabled(pppoe, true);
+        return;
+      }
       for (const id of secretIds) await api.talk(['/ppp/secret/enable', `=.id=${id}`]);
       await restoreQueueSpeed(api, queueItems);
       return;
@@ -398,6 +534,8 @@ async function syncRouterFromWinbox(router) {
   );
 
   for (const customer of customers || []) {
+    if (isRadiusManagedAccount(router, customer.pppoe_user)) continue;
+
     const secret = customer.pppoe_user ? secretByName.get(customer.pppoe_user) : null;
     const queue = customer.queue_name ? queueByName.get(customer.queue_name) : null;
     const deviceItem = secret || queue;
@@ -497,7 +635,7 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
-  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'}`);
+  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
   await tick();
   setInterval(() => tick().catch(error => console.error(error.message)), config.intervalMs);
 }

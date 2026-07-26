@@ -19,7 +19,7 @@ WORKER_ONLY_PPPOE=
 WORKER_SYNC_WINBOX_RECHARGES=false
 WORKER_SYNC_WINBOX_CUTS=false
 WORKER_RECHARGE_DAYS=30
-WORKER_RECHARGE_HOURS=6
+WORKER_RECHARGE_HOURS=3
 ```
 
 El usuario `api_wisp` debe tener permiso `read,write,api`, porque este worker si ejecutara cortes y activaciones cuando lo activemos.
@@ -61,12 +61,12 @@ Los clientes sin fecha no se cortan.
 
 ## Recargas hechas desde WinBox
 
-Si quieres que al habilitar un PPPoE en WinBox el panel lo tome como recarga de 30 dias + 6 horas:
+Si quieres que al habilitar un PPPoE en WinBox el panel lo tome como recarga de 30 dias + 3 horas:
 
 ```env
 WORKER_SYNC_WINBOX_RECHARGES=true
 WORKER_RECHARGE_DAYS=30
-WORKER_RECHARGE_HOURS=6
+WORKER_RECHARGE_HOURS=3
 ```
 
 Regla:
@@ -74,10 +74,29 @@ Regla:
 - Si en el panel esta `cortado` o `vencido`
 - y en MikroTik el PPPoE aparece habilitado
 - entonces el worker registra pago metodo `winbox`
-- y pone vencimiento `ahora + 30 dias + 6 horas`
+- y pone vencimiento `ahora + 30 dias + 3 horas`
 
 Para alinear cortes hechos en WinBox:
 
 ```env
 WORKER_SYNC_WINBOX_CUTS=true
 ```
+
+## Prueba controlada con FreeRADIUS
+
+Para administrar por RADIUS solo una cuenta de un router concreto:
+
+```env
+RADIUS_MANAGED_ACCOUNTS=10.100.100.4:prueba
+RADIUS_AUTHORIZE_FILE=/etc/freeradius/3.0/mods-config/files/authorize
+RADIUS_USERS_JSON={"prueba":{"password":"CLAVE_DEL_CLIENTE_DE_PRUEBA","group":"plan 50","rateLimit":"10M/25M"}}
+```
+
+La cuenta se identifica por `IP_DEL_ROUTER:usuario`. Esto evita afectar a un
+usuario con el mismo nombre en otro MikroTik.
+
+- `Recargar` escribe una autorización para el usuario y recarga FreeRADIUS.
+- `Cortar` escribe un rechazo RADIUS y elimina la sesión PPP activa.
+- El secreto PPP local puede permanecer deshabilitado: RADIUS es quien autentica.
+- La sincronización WinBox se omite para esa cuenta porque un secreto local
+  deshabilitado es normal cuando RADIUS tiene el control.
