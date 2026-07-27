@@ -31,8 +31,15 @@ const config = {
   routerName: process.env.ROUTER_NAME || 'RB4011 Fibra',
   routerKind: process.env.ROUTER_KIND || 'fibra',
   importSource: process.env.IMPORT_SOURCE || '',
+  radiusManagedAccounts: new Set(
+    String(process.env.IMPORT_RADIUS_MANAGED_ACCOUNTS || '')
+      .split(',')
+      .map(value => value.trim().toLowerCase())
+      .filter(Boolean)
+  ),
   setInitialDays: String(process.env.IMPORT_SET_INITIAL_DAYS || 'false').toLowerCase() === 'true',
-  initialDays: Number(process.env.IMPORT_INITIAL_DAYS || 30)
+  initialDays: Number(process.env.IMPORT_INITIAL_DAYS || 30),
+  initialHours: Number(process.env.IMPORT_INITIAL_HOURS || 3)
 };
 
 if (!config.importSource) {
@@ -40,6 +47,17 @@ if (!config.importSource) {
 }
 
 const dryRun = process.argv.includes('--dry-run');
+const onlyArg = process.argv.find(argument => argument.startsWith('--only='));
+const onlyIdentity = onlyArg ? onlyArg.slice('--only='.length).trim().toLowerCase() : '';
+
+function isRadiusManaged(identity) {
+  const account = String(identity || '').trim().toLowerCase();
+  const host = String(config.mikrotikHost || '').trim().toLowerCase();
+  const routerCode = String(config.routerCode || '').trim().toLowerCase();
+  return config.radiusManagedAccounts.has(account)
+    || config.radiusManagedAccounts.has(`${host}:${account}`)
+    || config.radiusManagedAccounts.has(`${routerCode}:${account}`);
+}
 
 function requireEnv(name, value) {
   if (!value) throw new Error(`Falta ${name} en .env.import`);
@@ -169,20 +187,26 @@ function parseSentence(sentence) {
 }
 
 function planInfo(profile = '') {
-  const clean = profile.trim();
-  const plans = {
-    'PLAN 7MB': { name: 'Fibra 7 Mbps', price: 95 },
-    'PLAN 10MB': { name: 'Fibra 10 Mbps', price: 95 },
-    'PLAN 20MB': { name: 'Fibra 20 Mbps', price: 120 },
-    'PLAN 25MB': { name: 'Fibra 25 Mbps', price: 120 },
-    'PLAN 40MB': { name: 'Fibra 40 Mbps', price: 150 },
-    'PLAN 50MB': { name: 'Fibra 50 Mbps', price: 150 },
-    'PLAN 100MB': { name: 'Fibra 100 Mbps', price: 200 },
-    'PLAN 150MB': { name: 'Fibra 150 Mbps', price: 250 },
-    'PLAN 200MB': { name: 'Fibra 200 Mbps', price: 300 }
+  const clean = String(profile || '').trim();
+  const normalized = clean.toUpperCase().replace(/\s+/g, ' ');
+  const speedMatch = normalized.match(/(\d+)\s*(?:MBPS|MB)?\b/);
+  const speed = speedMatch ? Number(speedMatch[1]) : 0;
+  const prices = {
+    7: 95,
+    10: 95,
+    20: 120,
+    25: 120,
+    40: 150,
+    50: 150,
+    100: 200,
+    150: 250,
+    200: 300
   };
+  const prefix = config.routerKind === 'fibra' ? 'Fibra' : 'Inalambrico';
 
-  return plans[clean] || { name: clean || 'Plan sin nombre', price: 0 };
+  return speed
+    ? { name: `${prefix} ${speed} Mbps`, price: prices[speed] || 0 }
+    : { name: clean || 'Plan sin nombre', price: 0 };
 }
 
 function speedToMbps(value = '') {
@@ -224,7 +248,17 @@ function cleanQueueTarget(target = '') {
 }
 
 function looksLikeCi(value = '') {
-  return /^[0-9A-Za-z-]{5,20}$/.test(String(value).trim());
+  return /^\d{5,12}(?:-[0-9A-Za-z]{1,3})?$/.test(String(value).trim());
+}
+
+function syntheticCi(router, identity) {
+  const cleanIdentity = String(identity || 'cliente')
+    .trim()
+    .toUpperCase()
+    .replace(/[^0-9A-Z]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return `SIN-CI-${String(router.code).toUpperCase()}-${cleanIdentity || 'CLIENTE'}`;
 }
 
 async function listSecrets() {
@@ -300,11 +334,76 @@ async function supabase(pathname, options = {}) {
   return data;
 }
 
+async function findCustomerByIdentity(routerId, field, value) {
+  if (!value) return null;
+  const rows = await supabase(
+    `customers?select=id,ci,router_id,pppoe_user,queue_name&router_id=eq.${encodeURIComponent(routerId)}&${field}=eq.${encodeURIComponent(value)}&limit=1`
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function findCustomerByCi(ci) {
+  if (!ci) return null;
+  const rows = await supabase(
+    `customers?select=id,ci,router_id,pppoe_user,queue_name&ci=eq.${encodeURIComponent(ci)}&limit=1`
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function availableCi(router, identity, candidate, existing) {
+  if (existing && existing.ci) {
+    const legacyPasswordCi = config.routerKind !== 'fibra'
+      && candidate
+      && existing.ci === candidate;
+    if (!legacyPasswordCi) return existing.ci;
+  }
+
+  if (looksLikeCi(candidate)) {
+    const owner = await findCustomerByCi(candidate);
+    if (!owner || (existing && owner.id === existing.id)) return candidate;
+  }
+
+  const base = syntheticCi(router, identity);
+  const owner = await findCustomerByCi(base);
+  if (!owner || (existing && owner.id === existing.id)) return base;
+  return `${base}-${String(router.id).slice(0, 8).toUpperCase()}`;
+}
+
+async function saveCustomer(router, identityField, identity, candidateCi, customer) {
+  const existing = await findCustomerByIdentity(router.id, identityField, identity);
+  const ci = await availableCi(router, identity, candidateCi, existing);
+  const { preserve_status: preserveStatus, ...values } = customer;
+  const body = { ...values, ci };
+
+  if (existing) {
+    if (preserveStatus) {
+      delete body.status;
+      delete body.paid_until;
+    }
+    await supabase(`customers?id=eq.${encodeURIComponent(existing.id)}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: JSON.stringify(body)
+    });
+    return;
+  }
+
+  if (preserveStatus) {
+    body.status = 'activo';
+    body.paid_until = null;
+  }
+  await supabase('customers', {
+    method: 'POST',
+    prefer: 'return=minimal',
+    body: JSON.stringify([body])
+  });
+}
+
 function initialPaidUntil(secret) {
   if (!config.setInitialDays || secret.disabled === 'true') return null;
   const date = new Date();
   date.setDate(date.getDate() + config.initialDays);
-  date.setHours(date.getHours() + 12);
+  date.setHours(date.getHours() + config.initialHours);
   return date.toISOString();
 }
 
@@ -331,36 +430,36 @@ async function upsertCustomers(router, secrets) {
   let skipped = 0;
 
   for (const secret of secrets) {
-    const ci = String(secret.password || '').trim();
-    if (!ci) {
+    const identity = String(secret.name || '').trim();
+    if (!identity) {
       skipped += 1;
       continue;
     }
 
+    const radiusManaged = isRadiusManaged(identity);
+    const passwordCandidate = config.routerKind === 'fibra'
+      ? String(secret.password || '').trim()
+      : '';
     const plan = planInfo(secret.profile);
     const paidUntil = initialPaidUntil(secret);
     const customer = {
       router_id: router.id,
       full_name: secret.name,
-      ci,
       sector: config.routerKind,
       plan_name: plan.name,
       monthly_price: plan.price,
       pppoe_user: secret.name,
-      queue_name: secret.name,
+      queue_name: null,
       ip_address: secret['remote-address'] || null,
       status: secret.disabled === 'true' ? 'cortado' : 'activo',
       paid_until: secret.disabled === 'true' ? null : undefined,
+      preserve_status: radiusManaged,
       updated_at: new Date().toISOString()
     };
 
     if (customer.status !== 'cortado' && paidUntil) customer.paid_until = paidUntil;
 
-    await supabase('customers?on_conflict=ci', {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates,return=minimal',
-      body: JSON.stringify([customer])
-    });
+    await saveCustomer(router, 'pppoe_user', identity, passwordCandidate, customer);
     imported += 1;
   }
 
@@ -373,18 +472,18 @@ async function upsertQueueCustomers(router, queues) {
 
   for (const queue of queues) {
     const ip = cleanQueueTarget(queue.target);
-    const ci = looksLikeCi(queue.comment) ? String(queue.comment).trim() : (ip || queue.name);
-    if (!ci) {
+    const identity = String(queue.name || '').trim();
+    if (!identity) {
       skipped += 1;
       continue;
     }
 
+    const ciCandidate = looksLikeCi(queue.comment) ? String(queue.comment).trim() : (ip || '');
     const plan = queuePlanInfo(queue['max-limit']);
     const paidUntil = initialPaidUntil(queue);
     const customer = {
       router_id: router.id,
       full_name: queue.name,
-      ci,
       sector: config.routerKind,
       plan_name: plan.name,
       monthly_price: plan.price,
@@ -398,11 +497,7 @@ async function upsertQueueCustomers(router, queues) {
 
     if (customer.status !== 'cortado' && paidUntil) customer.paid_until = paidUntil;
 
-    await supabase('customers?on_conflict=ci', {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates,return=minimal',
-      body: JSON.stringify([customer])
-    });
+    await saveCustomer(router, 'queue_name', identity, ciCandidate, customer);
     imported += 1;
   }
 
@@ -416,12 +511,18 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
 
   console.log(`Leyendo MikroTik ${config.routerName} (${config.mikrotikHost}:${config.mikrotikPort}) modo ${config.importSource}...`);
-  const items = config.importSource === 'queues' ? await listQueues() : await listSecrets();
+  const allItems = config.importSource === 'queues' ? await listQueues() : await listSecrets();
+  const items = onlyIdentity
+    ? allItems.filter(item => String(item.name || '').trim().toLowerCase() === onlyIdentity)
+    : allItems;
+  if (onlyIdentity && !items.length) {
+    throw new Error(`No se encontro "${onlyIdentity}" en ${config.routerName}`);
+  }
   const enabled = items.filter(item => item.disabled !== 'true').length;
   const disabled = items.length - enabled;
   const withoutCi = config.importSource === 'queues'
     ? items.filter(item => !cleanQueueTarget(item.target) && !item.name).length
-    : items.filter(item => !String(item.password || '').trim()).length;
+    : 0;
 
   console.log(`Encontrados: ${items.length} ${config.importSource === 'queues' ? 'queues' : 'PPPoE'} | activos: ${enabled} | cortados: ${disabled} | sin CI/IP: ${withoutCi}`);
 

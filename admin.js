@@ -91,6 +91,15 @@ function formatMoney(value) {
   return `Bs. ${Number(value || 0).toFixed(0)}`;
 }
 
+function isSyntheticCi(value) {
+  return String(value || '').trim().toUpperCase().startsWith('SIN-CI-');
+}
+
+function formatCi(value) {
+  const ci = String(value || '').trim();
+  return !ci || isSyntheticCi(ci) ? 'sin CI' : `CI ${ci}`;
+}
+
 function formatDateTime(value) {
   if (!value) return 'Sin fecha';
   const date = new Date(value);
@@ -231,7 +240,7 @@ function renderClients() {
       <tr class="${selected}" data-id="${client.id}">
         <td data-label="Cliente">
           <strong>${client.nombre}</strong>
-          <span>CI ${client.ci || '-'} · ${client.telefono || 'sin telefono'}</span>
+          <span>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</span>
         </td>
         <td data-label="Servicio">
           <strong>${client.plan}</strong>
@@ -270,7 +279,7 @@ function renderDetail() {
     <div class="detail-head">
       <div>
         <h3>${client.nombre}</h3>
-        <p>CI ${client.ci || '-'} · ${client.telefono || 'sin telefono'}</p>
+        <p>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</p>
       </div>
       <span class="state-pill ${status}">${status}</span>
     </div>
@@ -368,16 +377,19 @@ async function performAction(action, options = {}) {
 }
 
 function openClientDialog(client = null) {
+  const ciInput = document.getElementById('clientCi');
   document.getElementById('dialogTitle').textContent = client ? 'Editar cliente' : 'Nuevo cliente';
   document.getElementById('clientId').value = client?.id || '';
   document.getElementById('clientName').value = client?.nombre || '';
-  document.getElementById('clientCi').value = client?.ci || '';
+  ciInput.value = isSyntheticCi(client?.ci) ? '' : (client?.ci || '');
+  ciInput.required = !client || !isSyntheticCi(client?.ci);
+  ciInput.placeholder = isSyntheticCi(client?.ci) ? 'Sin CI registrado' : '';
   document.getElementById('clientPhone').value = client?.telefono || '';
   document.getElementById('clientSector').value = client?.sector || 'fibra';
   document.getElementById('clientPlan').value = client?.plan || 'Fibra 50 Mbps';
   document.getElementById('clientPrice').value = client?.precio || planPrices['Fibra 50 Mbps'] || 150;
   document.getElementById('clientPppoe').value = client?.pppoe || '';
-  document.getElementById('clientQueue').value = client?.queue || client?.pppoe || '';
+  document.getElementById('clientQueue').value = client?.queue || '';
   document.getElementById('clientIp').value = client?.ip || '';
   document.getElementById('clientPaidUntil').value = client?.pagadoHasta || '';
   document.getElementById('clientDueAt').value = toLocalDateTimeInput(client?.dueAt || '');
@@ -396,6 +408,8 @@ function openScheduleDialog(client) {
 async function handleClientSubmit(event) {
   event.preventDefault();
   const id = document.getElementById('clientId').value;
+  const existingClient = state.clients.find(client => client.id === id);
+  const enteredCi = document.getElementById('clientCi').value.trim();
   const dueInput = document.getElementById('clientDueAt').value;
   const paidInput = document.getElementById('clientPaidUntil').value;
   const dueAt = dueInput
@@ -404,7 +418,7 @@ async function handleClientSubmit(event) {
   const payload = {
     id,
     nombre: document.getElementById('clientName').value.trim(),
-    ci: document.getElementById('clientCi').value.trim(),
+    ci: enteredCi || (id && isSyntheticCi(existingClient?.ci) ? existingClient.ci : ''),
     telefono: document.getElementById('clientPhone').value.trim(),
     sector: document.getElementById('clientSector').value,
     plan: document.getElementById('clientPlan').value,

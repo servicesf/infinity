@@ -2,7 +2,7 @@ import { requireAdmin } from './_adminAuth.js';
 import { supabaseFetch } from './_supabase.js';
 
 function payloadToRow(payload) {
-  return {
+  const row = {
     full_name: payload.nombre,
     ci: payload.ci,
     phone: payload.telefono || null,
@@ -10,13 +10,16 @@ function payloadToRow(payload) {
     plan_name: payload.plan,
     monthly_price: Number(payload.precio || 0),
     pppoe_user: payload.pppoe || null,
-    queue_name: payload.queue || payload.pppoe || null,
+    queue_name: payload.queue || null,
     ip_address: payload.ip || null,
     status: payload.estado || 'activo',
     paid_until: payload.dueAt || payload.pagadoHasta || null,
     auto_cut_enabled: payload.autoCutEnabled !== false,
     updated_at: new Date().toISOString()
   };
+
+  if (payload.routerId) row.router_id = payload.routerId;
+  return row;
 }
 
 export default async function handler(req, res) {
