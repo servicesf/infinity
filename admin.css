@@ -446,6 +446,25 @@
   font-size: 0.86rem;
 }
 
+.client-table .router-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e8f7fb;
+  color: #17647f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.client-table .router-chip i {
+  font-size: 0.66rem;
+}
+
 .client-table td strong.warning {
   color: #9a6a00;
 }
@@ -924,6 +943,10 @@
     grid-column: span 2;
   }
 
+  .filters #routerFilter {
+    grid-column: span 2;
+  }
+
   .bridge-state {
     width: 38px;
     flex: 0 0 38px;
@@ -1056,6 +1079,11 @@
 
   .client-table td:first-child span {
     grid-column: 1 / -1;
+  }
+
+  .client-table td:first-child .router-chip {
+    grid-column: 1 / -1;
+    margin-top: 3px;
   }
 
   .client-table td:nth-child(2) strong,

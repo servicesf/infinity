@@ -21,6 +21,7 @@ const els = {
   tbody: document.getElementById('clientsTbody'),
   detail: document.getElementById('clientDetail'),
   search: document.getElementById('searchInput'),
+  router: document.getElementById('routerFilter'),
   sector: document.getElementById('sectorFilter'),
   status: document.getElementById('statusFilter'),
   stats: {
@@ -151,6 +152,36 @@ function getEffectiveStatus(client) {
   return client.estado || 'activo';
 }
 
+function routerKey(client) {
+  return client.router?.code || client.routerId || 'sin-router';
+}
+
+function routerName(client) {
+  return client.router?.name || 'Router sin asignar';
+}
+
+function renderRouterFilter() {
+  const selected = els.router.value || 'todos';
+  const routers = new Map();
+
+  state.clients.forEach(client => {
+    const key = routerKey(client);
+    const current = routers.get(key);
+    routers.set(key, {
+      name: routerName(client),
+      count: (current?.count || 0) + 1
+    });
+  });
+
+  const options = Array.from(routers.entries())
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'es'))
+    .map(([key, router]) => `<option value="${key}">${router.name} (${router.count})</option>`)
+    .join('');
+
+  els.router.innerHTML = `<option value="todos">Todos los routers (${state.clients.length})</option>${options}`;
+  els.router.value = selected === 'todos' || routers.has(selected) ? selected : 'todos';
+}
+
 function filteredClients() {
   const q = els.search.value.trim().toLowerCase();
   return state.clients.filter(client => {
@@ -162,10 +193,13 @@ function filteredClients() {
       client.pppoe,
       client.ip,
       client.plan,
-      client.sector
+      client.sector,
+      client.router?.name,
+      client.router?.code
     ].join(' ').toLowerCase();
 
     return (!q || text.includes(q))
+      && (els.router.value === 'todos' || routerKey(client) === els.router.value)
       && (els.sector.value === 'todos' || client.sector === els.sector.value)
       && (els.status.value === 'todos' || status === els.status.value);
   });
@@ -241,6 +275,7 @@ function renderClients() {
         <td data-label="Cliente">
           <strong>${client.nombre}</strong>
           <span>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</span>
+          <small class="router-chip"><i class="fas fa-server"></i>${routerName(client)}</small>
         </td>
         <td data-label="Servicio">
           <strong>${client.plan}</strong>
@@ -326,6 +361,15 @@ function renderAll() {
   renderDetail();
 }
 
+function renderFilteredClients() {
+  const visibleClients = filteredClients();
+  if (!visibleClients.some(client => client.id === state.selectedId)) {
+    state.selectedId = visibleClients[0]?.id || null;
+  }
+  renderClients();
+  renderDetail();
+}
+
 async function loadData() {
   const data = await api('/api/admin-data');
   state.clients = data.clients || [];
@@ -334,6 +378,7 @@ async function loadData() {
   if (state.selectedId && !state.clients.some(client => client.id === state.selectedId)) {
     state.selectedId = state.clients[0]?.id || null;
   }
+  renderRouterFilter();
   renderIncomeFilters();
   renderAll();
 }
@@ -523,9 +568,9 @@ document.addEventListener('click', event => {
   if (!toolsMenu.contains(event.target)) toolsMenu.classList.remove('open');
 });
 
-[els.search, els.sector, els.status].forEach(input => {
-  input.addEventListener('input', renderAll);
-  input.addEventListener('change', renderAll);
+[els.search, els.router, els.sector, els.status].forEach(input => {
+  input.addEventListener('input', renderFilteredClients);
+  input.addEventListener('change', renderFilteredClients);
 });
 
 [incomeYearFilter, incomeMonthFilter].forEach(input => input.addEventListener('change', renderIncome));

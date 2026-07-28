@@ -125,10 +125,13 @@
       <div class="panel-head">
         <div>
           <h2>Clientes</h2>
-          <p>Busca por nombre, CI, usuario PPPoE, IP, sector o telefono.</p>
+          <p>Busca por nombre, CI, usuario PPPoE, IP, router, sector o telefono.</p>
         </div>
         <div class="filters">
           <input id="searchInput" type="search" placeholder="Buscar cliente..."/>
+          <select id="routerFilter" aria-label="Filtrar clientes por router">
+            <option value="todos">Todos los routers</option>
+          </select>
           <select id="sectorFilter">
             <option value="todos">Todos los sectores</option>
             <option value="fibra">Fibra optica</option>
