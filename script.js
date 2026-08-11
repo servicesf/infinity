@@ -289,12 +289,12 @@ const demoCustomers = [
     ci: '12345678',
     nombre: 'Cliente demo',
     plan: 'Fibra 20 Mbps',
-    precio: 150,
+    precio: 149,
     estado: 'activo',
     pagadoHasta: '2026-07-18T18:00:00',
     ultimosPagos: [
-      { fecha: '2026-06-18', monto: 150, metodo: 'QR Bancario' },
-      { fecha: '2026-05-18', monto: 150, metodo: 'Efectivo' }
+      { fecha: '2026-06-18', monto: 149, metodo: 'QR Bancario' },
+      { fecha: '2026-05-18', monto: 149, metodo: 'Efectivo' }
     ]
   }
 ];
