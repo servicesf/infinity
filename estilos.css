@@ -933,6 +933,25 @@ main {
   letter-spacing: 0;
 }
 
+.plan-speed {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+  color: #062678;
+}
+
+.plan-speed strong {
+  font-size: 3rem;
+  line-height: 0.95;
+  font-weight: 900;
+}
+
+.plan-speed span {
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
 .plan-card p {
   min-height: 48px;
   margin: 8px 0 16px;
@@ -2254,6 +2273,18 @@ main {
 
   .plan-price {
     margin: 8px 0 0;
+  }
+
+  .plan-speed {
+    margin-top: 6px;
+  }
+
+  .plan-speed strong {
+    font-size: 2.55rem;
+  }
+
+  .plan-speed span {
+    font-size: 1.05rem;
   }
 
   .plan-price strong {
