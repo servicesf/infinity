@@ -56,8 +56,8 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand .brand-logo {
-  width: 148px;
-  height: 48px;
+  width: 136px;
+  height: 44px;
   border-radius: 6px;
   object-fit: cover;
   object-position: center;
@@ -354,11 +354,13 @@ main {
   object-position: center;
 }
 
-.top-carousel .carousel-slide.plan-promo-slide {
+.top-carousel .carousel-slide.plan-promo-slide,
+.top-carousel .carousel-slide.league-promo-slide {
   background: #02030a;
 }
 
-.top-carousel .carousel-slide.plan-promo-slide img {
+.top-carousel .carousel-slide.plan-promo-slide img,
+.top-carousel .carousel-slide.league-promo-slide img {
   object-fit: contain;
 }
 
