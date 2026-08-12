@@ -55,10 +55,12 @@ button, input, select, textarea { font: inherit; }
   gap: 10px;
 }
 
-.brand img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
+.brand .brand-logo {
+  width: 148px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+  object-position: center;
 }
 
 .brand-mark {
@@ -350,6 +352,14 @@ main {
   border-radius: 0;
   object-fit: cover;
   object-position: center;
+}
+
+.top-carousel .carousel-slide.plan-promo-slide {
+  background: #02030a;
+}
+
+.top-carousel .carousel-slide.plan-promo-slide img {
+  object-fit: contain;
 }
 
 .carousel-arrow {
