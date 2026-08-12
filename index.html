@@ -22,10 +22,10 @@
 
       <nav class="nav-shell" id="navShell" aria-label="Navegacion principal">
         <a href="#inicio" data-page-link="inicio" class="active">Inicio</a>
-        <a href="#internet" data-page-link="internet">Internet hogar</a>
-        <a href="#tv" data-page-link="tv">TV y streaming</a>
+        <a href="#internet" data-page-link="internet">FTTH</a>
+        <a href="#cliente" data-page-link="cliente">Postpago</a>
+        <a href="#tv" data-page-link="tv">Recargas</a>
         <a href="#pagos" data-page-link="pagos">Pagar</a>
-        <a href="#cliente" data-page-link="cliente">Mi servicio</a>
         <a href="#tienda" data-page-link="tienda">Tienda</a>
         <a href="#servicios" data-page-link="servicios">Servicios</a>
         <a href="#contacto" data-page-link="contacto">Ayuda</a>
@@ -86,88 +86,57 @@
         </div>
       </aside>
       <section class="welcome-services home-hub">
-        <div class="home-hero-card">
-          <div>
-            <h1>Conecta tu hogar con planes claros y soporte cercano.</h1>
-            <p>Fibra optica para navegar, estudiar, trabajar y disfrutar contenido en casa con atencion directa por WhatsApp.</p>
+        <div class="quick-access">
+          <div class="quick-access-heading">
+            <span>ELIGE UNA OPCION</span>
+            <h1>¿Que necesitas hoy?</h1>
           </div>
-          <div class="home-hero-actions">
-            <a class="btn primary" href="#internet" data-page-link="internet"><i class="fas fa-wifi"></i> Ver planes</a>
-            <a class="btn whatsapp" href="https://wa.me/59167236144?text=Hola,%20quiero%20informacion%20sobre%20internet" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-          </div>
-        </div>
 
-        <div class="home-category-group primary-group">
-          <div class="section-title compact">
-            <span>PRINCIPALES</span>
-            <h2>Lo mas importante</h2>
+          <div class="quick-tabs" role="tablist" aria-label="Servicios principales">
+            <button class="quick-tab active" id="quick-tab-ftth" type="button" role="tab" aria-selected="true" aria-controls="quick-panel-ftth" data-quick-tab="ftth">
+              <i class="fas fa-house-signal" aria-hidden="true"></i>
+              <span>FTTH</span>
+            </button>
+            <button class="quick-tab" id="quick-tab-postpago" type="button" role="tab" aria-selected="false" aria-controls="quick-panel-postpago" data-quick-tab="postpago">
+              <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+              <span>Postpago</span>
+            </button>
+            <button class="quick-tab" id="quick-tab-recargas" type="button" role="tab" aria-selected="false" aria-controls="quick-panel-recargas" data-quick-tab="recargas">
+              <i class="fas fa-tv" aria-hidden="true"></i>
+              <span>Recargas</span>
+            </button>
           </div>
-          <div class="welcome-list featured-list">
-            <a href="#internet" data-page-link="internet" class="welcome-item main-feature">
-              <div class="welcome-icon"><i class="fas fa-house-signal"></i></div>
-              <div>
-                <h3>Internet fibra</h3>
-                <p>Planes desde 50 Mbps para el hogar.</p>
-              </div>
-            </a>
-            <a href="#tv" data-page-link="tv" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-tv"></i></div>
-              <div>
-                <h3>TV y canales</h3>
-                <p>Canales, peliculas y series para tu familia.</p>
-              </div>
-            </a>
-            <a href="#cliente" data-page-link="cliente" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-file-invoice"></i></div>
-              <div>
-                <h3>Mi servicio</h3>
-                <p>Consulta plan, pagos y dias restantes.</p>
-              </div>
-            </a>
-          </div>
-        </div>
 
-        <div class="home-category-group">
-          <div class="section-title compact">
-            <span>TAMBIEN OFRECEMOS</span>
-            <h2>Servicios y productos</h2>
-          </div>
-          <div class="welcome-list secondary-list">
-            <a href="#tv" data-page-link="tv" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-circle-play"></i></div>
-              <div>
-                <h3>Streaming</h3>
-                <p>Entretenimiento mensual y activaciones.</p>
+          <div class="quick-panels">
+            <article class="quick-panel active" id="quick-panel-ftth" role="tabpanel" aria-labelledby="quick-tab-ftth" data-quick-panel="ftth">
+              <div class="quick-panel-copy">
+                <span>Internet para tu hogar</span>
+                <h2>Quiero Internet Fibra Optica en mi casa</h2>
+                <p>Conoce nuestros planes de 50, 100 y 200 Mbps con conexion estable y sin limites.</p>
+                <a class="btn primary" href="#internet" data-page-link="internet">Ir ahora <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
               </div>
-            </a>
-            <a href="#servicios" data-page-link="servicios" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-video"></i></div>
-              <div>
-                <h3>Camaras</h3>
-                <p>Seguridad para casa o negocio.</p>
+              <i class="fas fa-router quick-panel-art" aria-hidden="true"></i>
+            </article>
+
+            <article class="quick-panel" id="quick-panel-postpago" role="tabpanel" aria-labelledby="quick-tab-postpago" data-quick-panel="postpago" hidden>
+              <div class="quick-panel-copy">
+                <span>Tu servicio Infinit</span>
+                <h2>Consulta tu servicio Postpago</h2>
+                <p>Revisa tu plan, tus dias restantes, el historial de pagos y paga mediante QR.</p>
+                <a class="btn primary" href="#cliente" data-page-link="cliente">Ir ahora <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
               </div>
-            </a>
-            <a href="#servicios" data-page-link="servicios" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-screwdriver-wrench"></i></div>
-              <div>
-                <h3>Electronica</h3>
-                <p>Revision y reparacion de equipos.</p>
+              <i class="fas fa-mobile-screen-button quick-panel-art" aria-hidden="true"></i>
+            </article>
+
+            <article class="quick-panel" id="quick-panel-recargas" role="tabpanel" aria-labelledby="quick-tab-recargas" data-quick-panel="recargas" hidden>
+              <div class="quick-panel-copy">
+                <span>TV y entretenimiento</span>
+                <h2>Recarga canales y streaming</h2>
+                <p>Activa Smart IPTV, Magis TV, Netflix y canales satelitales desde un solo lugar.</p>
+                <a class="btn primary" href="#tv" data-page-link="tv">Ir ahora <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
               </div>
-            </a>
-            <a href="#servicios" data-page-link="servicios" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-leaf"></i></div>
-              <div>
-                <h3>Productos HGW</h3>
-                <p>Suplementos y productos por pedido.</p>
-              </div>
-            </a>
-            <a href="#tienda" data-page-link="tienda" class="welcome-item">
-              <div class="welcome-icon"><i class="fas fa-cart-shopping"></i></div>
-              <div>
-                <h3>Tienda</h3>
-                <p>Carrito, cupones y pedidos por WhatsApp.</p>
-              </div>
-            </a>
+              <i class="fas fa-circle-play quick-panel-art" aria-hidden="true"></i>
+            </article>
           </div>
         </div>
       </section>
@@ -176,7 +145,7 @@
     <section class="app-page" id="page-internet" data-page="internet">
       <section class="page-hero small">
         <div>
-          <span class="label-pill">Internet hogar</span>
+          <span class="label-pill">FTTH</span>
           <h1>Planes claros para cada casa.</h1>
           <p>Compara velocidad, precio y solicita instalacion por WhatsApp.</p>
         </div>
@@ -314,9 +283,9 @@
     <section class="app-page" id="page-tv" data-page="tv">
       <section class="page-hero small">
         <div>
-          <span class="label-pill">Entretenimiento</span>
+          <span class="label-pill">Recargas</span>
           <h1>TV, canales y streaming.</h1>
-          <p>Activa tus servicios de entretenimiento con atencion directa.</p>
+          <p>Recarga o activa tus servicios de entretenimiento con atencion directa.</p>
         </div>
       </section>
 
@@ -486,8 +455,8 @@
     <section class="app-page" id="page-cliente" data-page="cliente">
       <section class="page-hero small">
         <div>
-          <span class="label-pill">Portal cliente</span>
-          <h1>Mi servicio de fibra.</h1>
+          <span class="label-pill">Postpago</span>
+          <h1>Mi servicio Postpago.</h1>
           <p>Consulta dias restantes, historial de pagos y paga con QR desde el mismo lugar.</p>
         </div>
       </section>

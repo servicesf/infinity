@@ -118,6 +118,38 @@ carouselTrack?.addEventListener('touchend', event => {
 showCarouselSlide(0);
 startCarousel();
 
+const quickTabs = [...document.querySelectorAll('[data-quick-tab]')];
+const quickPanels = [...document.querySelectorAll('[data-quick-panel]')];
+
+function showQuickPanel(panelName) {
+  quickTabs.forEach(tab => {
+    const isActive = tab.dataset.quickTab === panelName;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+    tab.tabIndex = isActive ? 0 : -1;
+  });
+
+  quickPanels.forEach(panel => {
+    const isActive = panel.dataset.quickPanel === panelName;
+    panel.classList.toggle('active', isActive);
+    panel.hidden = !isActive;
+  });
+}
+
+quickTabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => showQuickPanel(tab.dataset.quickTab));
+  tab.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const nextTab = quickTabs[(index + direction + quickTabs.length) % quickTabs.length];
+    showQuickPanel(nextTab.dataset.quickTab);
+    nextTab.focus();
+  });
+});
+
+if (quickTabs.length) showQuickPanel('ftth');
+
 const metodoInfo = document.getElementById('metodoInfo');
 const metodoRadios = document.querySelectorAll('input[name="metodo"]');
 const diaSelect = document.getElementById('pDia');
