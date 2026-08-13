@@ -56,8 +56,8 @@ button, input, select, textarea { font: inherit; }
 }
 
 .brand .brand-logo {
-  width: 136px;
-  height: 44px;
+  width: 108px;
+  height: 35px;
   border-radius: 6px;
   object-fit: cover;
   object-position: center;
