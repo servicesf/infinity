@@ -262,22 +262,22 @@
     </section>
 
     <section class="app-page" id="page-tv" data-page="tv">
-      <section class="page-hero small">
-        <div>
-          <span class="label-pill">Recargas</span>
-          <h1>TV, canales y streaming.</h1>
-          <p>Recarga o activa tus servicios de entretenimiento con atencion directa.</p>
-        </div>
-      </section>
-
-      <div class="product-grid">
-        <article class="product-card">
-          <img src="imagenes/smartiptv.jpg" alt="Smart IPTV PRO"/>
+      <div class="product-grid recharge-grid">
+        <article class="product-card featured-product">
+          <img src="imagenes/smartiptv.jpg" alt="IPTV Smarters Pro"/>
           <span>IPTV</span>
-          <h3>Smart IPTV PRO</h3>
-          <p>Mas de 2,000 canales y catalogo de peliculas y series.</p>
-          <strong>Bs. 15 / mes</strong>
-          <a class="btn primary full" href="https://wa.me/59167236144?text=Hola,%20quiero%20activar%20Smart%20IPTV%20a%20Bs.%2015" target="_blank" rel="noopener">Activar</a>
+          <h3>IPTV Smarters Pro</h3>
+          <p>1 mes para 1 dispositivo.</p>
+          <strong>Bs. 20 / mes</strong>
+          <button class="btn primary full" type="button" data-product-details="iptv">Saber mas</button>
+        </article>
+        <article class="product-card featured-product">
+          <div class="netflix-mark">N</div>
+          <span>1 dispositivo</span>
+          <h3>Netflix</h3>
+          <p>1 mes para disfrutar series, peliculas y documentales.</p>
+          <strong>Bs. 35 / mes</strong>
+          <button class="btn primary full" type="button" data-product-details="netflix">Saber mas</button>
         </article>
         <article class="product-card">
           <img src="imagenes/magis.png" alt="Magis TV"/>
@@ -288,14 +288,6 @@
           <a class="btn primary full" href="https://wa.me/59167236144?text=Hola,%20quiero%20Magis%20TV%20a%20Bs.%2070" target="_blank" rel="noopener">Pedir</a>
         </article>
         <article class="product-card">
-          <div class="netflix-mark">N</div>
-          <span>1 perfil</span>
-          <h3>Netflix</h3>
-          <p>Perfil mensual para series, peliculas y documentales.</p>
-          <strong>Bs. 30 / mes</strong>
-          <a class="btn primary full" href="https://wa.me/59167236144?text=Hola,%20quiero%20Netflix%20a%20Bs.%2030" target="_blank" rel="noopener">Suscribirme</a>
-        </article>
-        <article class="product-card">
           <img src="imagenes/4935c5232684beb220190130202528000000.jpeg" alt="Satelite Amazonas"/>
           <span>Satelite</span>
           <h3>Amazonas 61W</h3>
@@ -303,6 +295,21 @@
           <strong>Bs. 40 / mes</strong>
           <a class="btn primary full" href="https://wa.me/59167236144?text=Hola,%20quiero%20el%20servicio%20Satelite%20Amazonas%2061W" target="_blank" rel="noopener">Contratar</a>
         </article>
+      </div>
+
+      <div class="product-modal" id="productModal" aria-hidden="true">
+        <div class="product-modal-backdrop" data-close-product-modal></div>
+        <section class="product-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+          <button class="product-modal-close" type="button" data-close-product-modal aria-label="Cerrar">
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+          <div class="product-modal-heading">
+            <span id="productModalLabel">Opciones</span>
+            <h2 id="productModalTitle">Elige tu recarga</h2>
+            <p id="productModalDescription"></p>
+          </div>
+          <div class="recharge-options" id="productModalOptions"></div>
+        </section>
       </div>
     </section>
 
@@ -332,10 +339,10 @@
               <option>Plan Esencial 50 Mbps - Bs. 149</option>
               <option>Plan Familiar 100 Mbps + 1000 canales - Bs. 199</option>
               <option>Plan Premium + TV 200 Mbps + 1000 canales + 30.000 peliculas - Bs. 299</option>
-              <option>Smart IPTV - Bs. 15</option>
+              <option>IPTV Smarters Pro 1 mes / 1 dispositivo - Bs. 20</option>
               <option>IKS Satelite Amazonas 61W - Bs. 40</option>
               <option>MAGIS TV - Bs. 70</option>
-              <option>Netflix - Bs. 30</option>
+              <option>Netflix 1 mes / 1 dispositivo - Bs. 35</option>
             </select>
           </div>
           <div class="form-split">

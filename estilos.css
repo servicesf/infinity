@@ -1351,6 +1351,12 @@ main {
   grid-template-columns: repeat(4, 1fr);
 }
 
+.recharge-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 920px;
+  margin: 0 auto;
+}
+
 .product-card {
   min-height: 400px;
   padding: 18px;
@@ -1394,6 +1400,122 @@ main {
   background-clip: text;
   color: transparent;
   font-size: 1.45rem;
+}
+
+.product-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.product-modal.open {
+  display: flex;
+}
+
+.product-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 14, 39, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.product-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow-y: auto;
+  padding: clamp(22px, 4vw, 34px);
+  border: 1px solid #d6e4f1;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 26px 80px rgba(0, 22, 65, 0.3);
+}
+
+.product-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: #243c58;
+  background: #fff;
+  cursor: pointer;
+}
+
+.product-modal-heading {
+  padding-right: 48px;
+}
+
+.product-modal-heading > span {
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.product-modal-heading h2 {
+  margin-top: 5px;
+  color: #062678;
+  font-size: clamp(1.65rem, 4vw, 2.4rem);
+}
+
+.product-modal-heading p {
+  margin-top: 7px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.recharge-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.recharge-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7fbff;
+}
+
+.recharge-option h3 {
+  color: #142a52;
+  font-size: 1.08rem;
+}
+
+.recharge-option p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.recharge-option > strong {
+  color: var(--blue);
+  font-size: 1.28rem;
+  white-space: nowrap;
+}
+
+.recharge-option .btn {
+  min-height: 42px;
+  padding: 0 16px;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .payment-layout {
@@ -2320,6 +2442,61 @@ main {
   .form-split,
   .method-grid {
     grid-template-columns: 1fr;
+  }
+
+  .recharge-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .recharge-grid .product-card {
+    min-height: 330px;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .recharge-grid .product-card img,
+  .recharge-grid .netflix-mark {
+    height: 105px;
+  }
+
+  .recharge-grid .product-card h3 {
+    font-size: 1.08rem;
+  }
+
+  .recharge-grid .product-card p {
+    font-size: 0.84rem;
+    line-height: 1.35;
+  }
+
+  .recharge-grid .product-card strong {
+    font-size: 1.12rem;
+  }
+
+  .recharge-grid .product-card .btn {
+    min-height: 40px;
+    padding: 0 8px;
+    font-size: 0.84rem;
+  }
+
+  .product-modal {
+    padding: 10px;
+  }
+
+  .product-modal-dialog {
+    max-height: calc(100vh - 20px);
+    padding: 22px 16px 16px;
+  }
+
+  .recharge-option {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .recharge-option .btn {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .coupon-row,

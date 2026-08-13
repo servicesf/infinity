@@ -150,6 +150,79 @@ quickTabs.forEach((tab, index) => {
 
 if (quickTabs.length) showQuickPanel('ftth');
 
+const productModal = document.getElementById('productModal');
+const productModalLabel = document.getElementById('productModalLabel');
+const productModalTitle = document.getElementById('productModalTitle');
+const productModalDescription = document.getElementById('productModalDescription');
+const productModalOptions = document.getElementById('productModalOptions');
+let lastProductTrigger = null;
+
+const rechargeProducts = {
+  iptv: {
+    label: 'IPTV Smarters Pro',
+    title: 'Elige tu plan de IPTV',
+    description: 'Canales, peliculas y series para tus dispositivos.',
+    options: [
+      { title: '1 mes', detail: '1 dispositivo', price: 20 },
+      { title: '1 mes', detail: '3 dispositivos', price: 30 },
+      { title: '7 meses', detail: '1 dispositivo', price: 100 }
+    ]
+  },
+  netflix: {
+    label: 'Netflix',
+    title: 'Elige tu acceso a Netflix',
+    description: 'Disfruta series, peliculas y documentales durante un mes.',
+    options: [
+      { title: '1 mes', detail: '1 dispositivo', price: 35 },
+      { title: '1 mes', detail: 'Cuenta completa', price: 135 }
+    ]
+  }
+};
+
+function openProductModal(productName, trigger) {
+  const product = rechargeProducts[productName];
+  if (!productModal || !product || !productModalOptions) return;
+  lastProductTrigger = trigger;
+  productModalLabel.textContent = product.label;
+  productModalTitle.textContent = product.title;
+  productModalDescription.textContent = product.description;
+  productModalOptions.innerHTML = product.options.map(option => {
+    const message = `Hola, quiero comprar ${product.label}: ${option.title}, ${option.detail}, a Bs. ${option.price}.`;
+    return `
+      <article class="recharge-option">
+        <div>
+          <h3>${option.title}</h3>
+          <p>${option.detail}</p>
+        </div>
+        <strong>Bs. ${option.price}</strong>
+        <a class="btn primary" href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">Comprar</a>
+      </article>
+    `;
+  }).join('');
+  productModal.classList.add('open');
+  productModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+  productModal.querySelector('[data-close-product-modal]')?.focus();
+}
+
+function closeProductModal() {
+  if (!productModal) return;
+  productModal.classList.remove('open');
+  productModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+  lastProductTrigger?.focus();
+}
+
+document.addEventListener('click', event => {
+  const trigger = event.target.closest('[data-product-details]');
+  if (trigger) openProductModal(trigger.dataset.productDetails, trigger);
+  if (event.target.closest('[data-close-product-modal]')) closeProductModal();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && productModal?.classList.contains('open')) closeProductModal();
+});
+
 const metodoInfo = document.getElementById('metodoInfo');
 const metodoRadios = document.querySelectorAll('input[name="metodo"]');
 const diaSelect = document.getElementById('pDia');
