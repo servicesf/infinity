@@ -30,10 +30,8 @@
   },
   "streaming": {
     "productos": [
-      { "nombre": "IPTV Smarters Pro", "precio": "20 Bs/mes (1 dispositivo)", "detalle": "Opciones: 1 mes para 1 dispositivo a 20 Bs, 1 mes para 3 dispositivos a 30 Bs y 7 meses para 1 dispositivo a 100 Bs" },
-      { "nombre": "MAGIS TV", "precio": "70 Bs pago único" },
-      { "nombre": "Netflix", "precio": "35 Bs/mes (1 dispositivo)", "detalle": "Opciones: 1 mes para 1 dispositivo a 35 Bs o cuenta completa a 135 Bs" },
-      { "nombre": "Satélite Amazonas 61°W", "precio": "40 Bs/mes" }
+      { "nombre": "IPTV Smarters Pro", "precio": "20 Bs (1 dispositivo)", "detalle": "Opciones: 1 mes para 1 dispositivo a 20 Bs, 1 mes para 3 dispositivos a 30 Bs y 7 meses para 1 dispositivo a 100 Bs" },
+      { "nombre": "Netflix", "precio": "35 Bs (1 dispositivo)", "detalle": "Opciones: 1 mes para 1 dispositivo a 35 Bs o cuenta completa a 135 Bs" }
     ]
   },
   "camaras": {

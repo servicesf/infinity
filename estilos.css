@@ -1446,6 +1446,16 @@ main {
   flex: 1;
 }
 
+.product-card p.product-device {
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  color: #53687f;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .product-card strong {
   background: linear-gradient(90deg, var(--blue), var(--cyan));
   -webkit-background-clip: text;
