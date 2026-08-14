@@ -1409,6 +1409,10 @@ main {
   margin: 0 auto;
 }
 
+.recharge-grid .featured-product {
+  min-height: 0;
+}
+
 .product-card {
   min-height: 400px;
   padding: 18px;
@@ -1448,7 +1452,7 @@ main {
 
 .product-card p.product-device {
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
   margin: 0;
   color: #53687f;
   font-size: 1rem;
@@ -1488,10 +1492,10 @@ main {
 .product-modal-dialog {
   position: relative;
   z-index: 1;
-  width: min(720px, 100%);
-  max-height: min(760px, calc(100vh - 40px));
+  width: min(600px, 100%);
+  max-height: calc(100vh - 32px);
   overflow-y: auto;
-  padding: clamp(22px, 4vw, 34px);
+  padding: 24px;
   border: 1px solid #d6e4f1;
   border-radius: 8px;
   background: #fff;
@@ -1528,27 +1532,28 @@ main {
 .product-modal-heading h2 {
   margin-top: 5px;
   color: #062678;
-  font-size: clamp(1.65rem, 4vw, 2.4rem);
+  font-size: clamp(1.45rem, 3.4vw, 2rem);
 }
 
 .product-modal-heading p {
   margin-top: 7px;
   color: var(--muted);
-  line-height: 1.45;
+  font-size: 0.92rem;
+  line-height: 1.35;
 }
 
 .recharge-options {
   display: grid;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 .recharge-option {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  gap: 10px;
+  padding: 11px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f7fbff;
@@ -1556,24 +1561,31 @@ main {
 
 .recharge-option h3 {
   color: #142a52;
-  font-size: 1.08rem;
+  font-size: 1rem;
 }
 
 .recharge-option p {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .recharge-option > strong {
   color: var(--blue);
-  font-size: 1.28rem;
+  font-size: 1.12rem;
   white-space: nowrap;
 }
 
 .recharge-option .btn {
-  min-height: 42px;
-  padding: 0 16px;
+  min-height: 38px;
+  padding: 0 13px;
+  font-size: 0.9rem;
+}
+
+.product-modal-dismiss {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 14px;
 }
 
 body.modal-open {
@@ -2526,7 +2538,7 @@ body.modal-open {
   }
 
   .recharge-grid .product-card {
-    min-height: 330px;
+    min-height: 0;
     gap: 8px;
     padding: 12px;
   }
@@ -2556,23 +2568,24 @@ body.modal-open {
   }
 
   .product-modal {
-    padding: 10px;
+    padding: 8px;
   }
 
   .product-modal-dialog {
-    max-height: calc(100vh - 20px);
-    padding: 22px 16px 16px;
+    max-height: calc(100vh - 16px);
+    padding: 18px 12px 12px;
   }
 
   .recharge-option {
-    grid-template-columns: 1fr auto;
-    gap: 10px;
-    padding: 13px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 6px;
+    padding: 9px;
   }
 
   .recharge-option .btn {
-    grid-column: 1 / -1;
-    width: 100%;
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 0.8rem;
   }
 
   .coupon-row,

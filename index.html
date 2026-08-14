@@ -269,21 +269,6 @@
           <button class="btn primary full" type="button" data-product-details="netflix">Saber mas</button>
         </article>
       </div>
-
-      <div class="product-modal" id="productModal" aria-hidden="true">
-        <div class="product-modal-backdrop" data-close-product-modal></div>
-        <section class="product-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
-          <button class="product-modal-close" type="button" data-close-product-modal aria-label="Cerrar">
-            <i class="fas fa-xmark" aria-hidden="true"></i>
-          </button>
-          <div class="product-modal-heading">
-            <span id="productModalLabel">Opciones</span>
-            <h2 id="productModalTitle">Elige tu recarga</h2>
-            <p id="productModalDescription"></p>
-          </div>
-          <div class="recharge-options" id="productModalOptions"></div>
-        </section>
-      </div>
     </section>
 
     <section class="app-page" id="page-pagos" data-page="pagos">
@@ -525,6 +510,22 @@
       </div>
     </section>
   </main>
+
+  <div class="product-modal" id="productModal" aria-hidden="true">
+    <div class="product-modal-backdrop" data-close-product-modal></div>
+    <section class="product-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <button class="product-modal-close" type="button" data-close-product-modal aria-label="Cerrar">
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+      </button>
+      <div class="product-modal-heading">
+        <span id="productModalLabel">Opciones</span>
+        <h2 id="productModalTitle">Elige tu recarga</h2>
+        <p id="productModalDescription"></p>
+      </div>
+      <div class="recharge-options" id="productModalOptions"></div>
+      <button class="btn light product-modal-dismiss" type="button" data-close-product-modal>Cerrar</button>
+    </section>
+  </div>
 
   <a class="wa-float" href="https://wa.me/59167236144?text=Hola,%20quiero%20informacion" target="_blank" rel="noopener" aria-label="WhatsApp">
     <i class="fab fa-whatsapp"></i>

@@ -202,7 +202,7 @@ function openProductModal(productName, trigger) {
   productModal.classList.add('open');
   productModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
-  productModal.querySelector('[data-close-product-modal]')?.focus();
+  productModal.querySelector('.product-modal-close')?.focus();
 }
 
 function closeProductModal() {
