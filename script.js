@@ -176,6 +176,15 @@ const rechargeProducts = {
       { title: '1 mes', detail: '1 dispositivo', price: 35 },
       { title: '1 mes', detail: 'Cuenta completa', price: 135 }
     ]
+  },
+  chatgpt: {
+    label: 'ChatGPT Plus',
+    title: 'Elige tu acceso a ChatGPT Plus',
+    description: 'Cuenta compartida. Por favor, no elimines conversaciones de otros usuarios.',
+    options: [
+      { title: '1 mes', detail: '1 dispositivo · cuenta compartida', price: 30 },
+      { title: '1 mes', detail: '2 dispositivos · cuenta compartida', price: 50 }
+    ]
   }
 };
 
