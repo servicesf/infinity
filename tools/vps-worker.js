@@ -211,8 +211,18 @@ async function findIds(api, command, field, value) {
   return replies.map(parseSentence).map(item => item['.id']).filter(Boolean);
 }
 
+function normalizeRateLimit(value = '') {
+  return String(value || '').toLowerCase().replace(/\s+/g, '');
+}
+
 function isQueueCut(queue) {
-  return String(queue?.['max-limit'] || '').toLowerCase() === '64k/64k';
+  const maxLimit = normalizeRateLimit(queue?.['max-limit']);
+  return maxLimit === '64k/64k' || maxLimit === '65536/65536';
+}
+
+function isRouterItemDisabled(item) {
+  const value = String(item?.disabled ?? '').trim().toLowerCase();
+  return item?.disabled === true || value === 'true' || value === 'yes' || value === '1';
 }
 
 function appendLimitMarker(comment = '', maxLimit = '') {
@@ -575,9 +585,9 @@ async function syncRouterFromWinbox(router) {
     }
     if (!radiusManaged && !deviceItem) continue;
 
-    const mikrotikEnabled = radiusManaged
-      ? radiusEnabled
-      : deviceItem.disabled !== 'true' && !isQueueCut(deviceItem);
+  const mikrotikEnabled = radiusManaged
+    ? radiusEnabled
+    : !isRouterItemDisabled(deviceItem) && !isQueueCut(deviceItem);
     const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
 
     if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
@@ -610,15 +620,7 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      if (!radiusManaged) {
-        await runCommand(router, 'payment', {
-          pppoe: customer.pppoe_user,
-          queue: customer.queue_name || customer.pppoe_user,
-          ip: customer.ip_address
-        });
-      }
-
-      console.log(`Recarga WinBox sincronizada: ${target} hasta ${paidUntil}`);
+    console.log(`Recarga WinBox sincronizada: ${target} hasta ${paidUntil}`);
       continue;
     }
 
@@ -637,15 +639,7 @@ async function syncRouterFromWinbox(router) {
         })
       });
 
-      if (!radiusManaged) {
-        await runCommand(router, 'cut', {
-          pppoe: customer.pppoe_user,
-          queue: customer.queue_name || customer.pppoe_user,
-          ip: customer.ip_address
-        });
-      }
-
-      console.log(`Corte WinBox sincronizado: ${target}`);
+    console.log(`Corte WinBox sincronizado: ${target}`);
     }
   }
 }

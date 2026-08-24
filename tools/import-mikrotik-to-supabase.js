@@ -399,8 +399,22 @@ async function saveCustomer(router, identityField, identity, candidateCi, custom
   });
 }
 
-function initialPaidUntil(secret) {
-  if (!config.setInitialDays || secret.disabled === 'true') return null;
+function normalizeRateLimit(value = '') {
+  return String(value || '').toLowerCase().replace(/\s+/g, '');
+}
+
+function isQueueCut(queue) {
+  const maxLimit = normalizeRateLimit(queue?.['max-limit']);
+  return maxLimit === '64k/64k' || maxLimit === '65536/65536';
+}
+
+function isRouterItemDisabled(item) {
+  const value = String(item?.disabled ?? '').trim().toLowerCase();
+  return item?.disabled === true || value === 'true' || value === 'yes' || value === '1';
+}
+
+function initialPaidUntil(item) {
+  if (!config.setInitialDays || isRouterItemDisabled(item) || isQueueCut(item)) return null;
   const date = new Date();
   date.setDate(date.getDate() + config.initialDays);
   date.setHours(date.getHours() + config.initialHours);
@@ -441,6 +455,7 @@ async function upsertCustomers(router, secrets) {
       ? String(secret.password || '').trim()
       : '';
     const plan = planInfo(secret.profile);
+    const cut = isRouterItemDisabled(secret);
     const paidUntil = initialPaidUntil(secret);
     const customer = {
       router_id: router.id,
@@ -451,8 +466,8 @@ async function upsertCustomers(router, secrets) {
       pppoe_user: secret.name,
       queue_name: null,
       ip_address: secret['remote-address'] || null,
-      status: secret.disabled === 'true' ? 'cortado' : 'activo',
-      paid_until: secret.disabled === 'true' ? null : undefined,
+      status: cut ? 'cortado' : 'activo',
+      paid_until: cut ? null : undefined,
       preserve_status: radiusManaged,
       updated_at: new Date().toISOString()
     };
@@ -480,6 +495,7 @@ async function upsertQueueCustomers(router, queues) {
 
     const ciCandidate = looksLikeCi(queue.comment) ? String(queue.comment).trim() : (ip || '');
     const plan = queuePlanInfo(queue['max-limit']);
+    const cut = isRouterItemDisabled(queue) || isQueueCut(queue);
     const paidUntil = initialPaidUntil(queue);
     const customer = {
       router_id: router.id,
@@ -490,8 +506,8 @@ async function upsertQueueCustomers(router, queues) {
       pppoe_user: null,
       queue_name: queue.name,
       ip_address: ip || null,
-      status: queue.disabled === 'true' || String(queue['max-limit'] || '').toLowerCase() === '64k/64k' ? 'cortado' : 'activo',
-      paid_until: queue.disabled === 'true' || String(queue['max-limit'] || '').toLowerCase() === '64k/64k' ? null : undefined,
+      status: cut ? 'cortado' : 'activo',
+      paid_until: cut ? null : undefined,
       updated_at: new Date().toISOString()
     };
 
@@ -518,7 +534,7 @@ async function main() {
   if (onlyIdentity && !items.length) {
     throw new Error(`No se encontro "${onlyIdentity}" en ${config.routerName}`);
   }
-  const enabled = items.filter(item => item.disabled !== 'true').length;
+  const enabled = items.filter(item => !isRouterItemDisabled(item) && !(config.importSource === 'queues' && isQueueCut(item))).length;
   const disabled = items.length - enabled;
   const withoutCi = config.importSource === 'queues'
     ? items.filter(item => !cleanQueueTarget(item.target) && !item.name).length
