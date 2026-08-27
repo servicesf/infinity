@@ -103,6 +103,7 @@
 }
 
 .admin-stats {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
@@ -231,33 +232,59 @@ button.stat-card:focus-visible {
 
 .sector-stat {
   display: grid;
-  gap: 10px;
+  gap: 2px;
 }
 
-.sector-counts {
-  display: grid;
+.sector-picker {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 35;
+  width: min(360px, 100%);
+  display: none;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(18, 48, 71, 0.2);
 }
 
-.sector-counts small {
+.sector-picker.open {
   display: grid;
-  gap: 4px;
-  padding: 8px;
+}
+
+.sector-picker button {
+  display: grid;
+  gap: 5px;
+  min-height: 62px;
+  padding: 9px;
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: #f2f8fc;
-  text-align: center;
-}
-
-.sector-counts b {
-  color: var(--muted);
-  font-size: 0.7rem;
-}
-
-.sector-counts strong {
-  margin: 0;
   color: var(--ink);
-  font-size: 1.2rem;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sector-picker button:hover,
+.sector-picker button.active {
+  border-color: var(--blue);
+  background: #e8f7fb;
+}
+
+.sector-picker span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.sector-picker strong {
+  margin: 0;
+  color: var(--blue);
+  font-size: 1.35rem;
 }
 
 .income-panel {
@@ -434,6 +461,12 @@ button.stat-card:focus-visible {
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
+}
+
+.client-card-foot {
+  justify-content: flex-end;
+  padding-top: 7px;
+  border-top: 1px solid #edf3f7;
 }
 
 .client-card-head > div,
@@ -737,8 +770,8 @@ button.stat-card:focus-visible {
 .client-detail {
   position: sticky;
   top: 82px;
-  min-height: 520px;
-  padding: 18px;
+  min-height: 0;
+  padding: 15px;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -746,7 +779,7 @@ button.stat-card:focus-visible {
 }
 
 .empty-detail {
-  min-height: 480px;
+  min-height: 250px;
   display: grid;
   align-content: center;
   justify-items: center;
@@ -1087,29 +1120,43 @@ button.stat-card:focus-visible {
   }
 
   .admin-stats {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
     margin-bottom: 10px;
   }
 
   .stat-card {
-    padding: 10px;
+    min-width: 0;
+    padding: 8px 6px;
     border-radius: 12px;
   }
 
   .admin-stats strong {
-    font-size: 1.42rem;
+    font-size: 1.3rem;
     margin: 5px 0 3px;
   }
 
   .admin-stats span,
   .admin-stats small {
-    font-size: 0.76rem;
+    overflow: hidden;
+    font-size: 0.66rem;
     line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .admin-stats .sector-stat {
-    grid-column: span 3;
+    grid-column: auto;
+  }
+
+  .admin-stats .stat-card > small {
+    display: none;
+  }
+
+  .sector-picker {
+    left: 0;
+    right: 0;
+    width: 100%;
   }
 
   .filters input,
@@ -1180,6 +1227,32 @@ button.stat-card:focus-visible {
 
   .client-detail {
     order: -1;
+    padding: 12px;
+  }
+
+  .client-detail.is-empty {
+    display: none;
+  }
+
+  .detail-grid,
+  .detail-grid.compact {
+    gap: 7px;
+    margin: 9px 0;
+  }
+
+  .detail-summary,
+  .detail-item {
+    padding: 9px;
+  }
+
+  .detail-actions {
+    gap: 6px;
+  }
+
+  .detail-actions .btn {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 0.82rem;
   }
 
   .client-table-wrap {

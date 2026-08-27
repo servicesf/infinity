@@ -3,7 +3,8 @@ const state = {
   payments: [],
   selectedId: null,
   authenticated: false,
-  statusFilter: 'todos'
+  statusFilter: 'todos',
+  routerFilter: 'todos'
 };
 
 const planPrices = {
@@ -49,6 +50,8 @@ const toolsMenuBtn = document.getElementById('toolsMenuBtn');
 const chartDialog = document.getElementById('chartDialog');
 const incomeFrom = document.getElementById('incomeFrom');
 const incomeTo = document.getElementById('incomeTo');
+const sectorToggleBtn = document.getElementById('sectorToggleBtn');
+const sectorPicker = document.getElementById('sectorPicker');
 
 function setLoggedIn(loggedIn) {
   state.authenticated = loggedIn;
@@ -166,8 +169,12 @@ function filteredClients() {
       client.router?.code
     ].join(' ').toLowerCase();
 
+    const matchesStatus = state.statusFilter === 'todos'
+      || status === state.statusFilter
+      || (state.statusFilter === 'vencido' && status === 'cortado');
     return (!q || text.includes(q))
-      && (state.statusFilter === 'todos' || status === state.statusFilter);
+      && matchesStatus
+      && (state.routerFilter === 'todos' || routerGroup(client) === state.routerFilter);
   });
 }
 
@@ -197,7 +204,7 @@ function renderStats() {
 
   els.stats.total.textContent = state.clients.length;
   els.stats.active.textContent = statuses.filter(status => status === 'activo').length;
-  els.stats.expired.textContent = statuses.filter(status => status === 'vencido').length;
+  els.stats.expired.textContent = statuses.filter(status => status === 'vencido' || status === 'cortado').length;
   els.stats.rb4011.textContent = routerCounts.rb4011;
   els.stats.rb750.textContent = routerCounts.rb750;
   els.stats.e50ug.textContent = routerCounts.e50ug;
@@ -209,6 +216,13 @@ function syncStatFilterState() {
     card.classList.toggle('active', selected);
     card.setAttribute('aria-pressed', String(selected));
   });
+  document.querySelectorAll('[data-router-filter]').forEach(button => {
+    button.classList.toggle('active', button.dataset.routerFilter === state.routerFilter);
+  });
+  sectorToggleBtn.classList.toggle('active', state.routerFilter !== 'todos');
+  document.getElementById('sectorSelectionLabel').textContent = state.routerFilter === 'todos'
+    ? 'Seleccionar equipo'
+    : state.routerFilter.toUpperCase();
 }
 
 function renderIncome() {
@@ -249,15 +263,11 @@ function renderClients() {
     const selected = client.id === state.selectedId ? 'selected' : '';
     const status = getEffectiveStatus(client);
     const countdown = countdownParts(client);
-    const accessLabel = client.pppoe
-      ? `PPPoE ${client.pppoe}`
-      : `Queue ${client.queue || '-'}${client.ip ? ` · IP ${client.ip}` : ''}`;
     return `
       <article class="client-card ${selected}" data-id="${client.id}">
         <div class="client-card-head">
           <div>
           <strong>${client.nombre}</strong>
-          <span>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</span>
           </div>
           <span class="state-pill ${status}">${status}</span>
         </div>
@@ -266,7 +276,6 @@ function renderClients() {
           <strong>${client.plan}</strong>
         </div>
         <div class="client-card-foot">
-          <span>${accessLabel}</span>
           <div class="client-due">
           <strong class="${countdown.tone}">${countdown.label}</strong>
           <small>${countdown.dateLabel}</small>
@@ -279,6 +288,7 @@ function renderClients() {
 
 function renderDetail() {
   const client = state.clients.find(item => item.id === state.selectedId);
+  els.detail.classList.toggle('is-empty', !client);
   if (!client) {
     els.detail.innerHTML = `
       <div class="empty-detail">
@@ -293,14 +303,12 @@ function renderDetail() {
   const status = getEffectiveStatus(client);
   const countdown = countdownParts(client);
   const payments = client.historial || [];
-  const accessTitle = client.pppoe ? 'PPPoE' : 'Queue/IP';
-  const accessValue = client.pppoe || `${client.queue || '-'}${client.ip ? ` · ${client.ip}` : ''}`;
   const dueTitle = status === 'cortado' ? 'Servicio' : 'Vence';
   els.detail.innerHTML = `
     <div class="detail-head">
       <div>
         <h3>${client.nombre}</h3>
-        <p>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</p>
+        <p>${shortRouterName(client)} · ${client.plan}</p>
       </div>
       <span class="state-pill ${status}">${status}</span>
     </div>
@@ -313,7 +321,6 @@ function renderDetail() {
       </div>
       <div class="detail-item"><span>Mensualidad</span><strong>${formatMoney(client.precio)}</strong></div>
       <div class="detail-item"><span>Plan</span><strong>${client.plan}</strong></div>
-      <div class="detail-item"><span>${accessTitle}</span><strong>${accessValue}</strong></div>
       <div class="detail-item"><span>Router</span><strong>${client.router?.name || '-'}</strong></div>
       <div class="detail-item"><span>Corte auto</span><strong>${client.autoCutEnabled ? 'Activado' : 'No'}</strong></div>
     </div>
@@ -321,10 +328,6 @@ function renderDetail() {
     <div class="detail-actions">
       <button class="btn primary" type="button" data-detail-action="recharge"><i class="fas fa-money-bill-wave"></i> Recargar 30d</button>
       <button class="btn ghost" type="button" data-detail-action="schedule-cut"><i class="fas fa-calendar-check"></i> Programar corte</button>
-      <button class="btn ghost" type="button" data-detail-action="edit"><i class="fas fa-pen"></i> Editar</button>
-      ${status === 'cortado'
-        ? '<button class="btn primary" type="button" data-detail-action="enable"><i class="fas fa-wifi"></i> Activar</button>'
-        : '<button class="btn ghost" type="button" data-detail-action="cut"><i class="fas fa-ban"></i> Cortar</button>'}
       <button class="btn danger" type="button" data-detail-action="delete"><i class="fas fa-trash"></i> Eliminar</button>
     </div>
 
@@ -351,7 +354,7 @@ function renderAll() {
 function renderFilteredClients() {
   const visibleClients = filteredClients();
   if (!visibleClients.some(client => client.id === state.selectedId)) {
-    state.selectedId = visibleClients[0]?.id || null;
+    state.selectedId = null;
   }
   renderClients();
   renderDetail();
@@ -362,9 +365,8 @@ async function loadData() {
   const data = await api('/api/admin-data');
   state.clients = data.clients || [];
   state.payments = data.payments || [];
-  if (!state.selectedId && state.clients.length) state.selectedId = state.clients[0].id;
   if (state.selectedId && !state.clients.some(client => client.id === state.selectedId)) {
-    state.selectedId = state.clients[0]?.id || null;
+    state.selectedId = null;
   }
   renderAll();
 }
@@ -386,7 +388,7 @@ async function performAction(action, options = {}) {
   if (!client) return;
 
   const labels = {
-    recharge: `Recargar 30 dias + 3 horas a ${client.nombre}?`,
+    recharge: `Aviso: vas a recargar 30 días + 3 horas a ${client.nombre}. ¿Confirmar?`,
     'schedule-cut': `Programar corte para ${client.nombre}?`,
     cut: `Marcar corte y mandar accion pendiente para ${client.nombre}?`,
     enable: `Activar y mandar accion pendiente para ${client.nombre}?`
@@ -402,7 +404,6 @@ async function performAction(action, options = {}) {
     })
   });
   await loadData();
-  alert('Accion guardada. La VPS ejecutara el comando MikroTik.');
 }
 
 async function deleteSelectedClient(client) {
@@ -417,7 +418,6 @@ async function deleteSelectedClient(client) {
   });
   state.selectedId = null;
   await loadData();
-  alert('Cliente eliminado del panel.');
 }
 
 function openClientDialog(client = null) {
@@ -577,6 +577,10 @@ toolsMenuBtn.addEventListener('click', event => {
 });
 document.addEventListener('click', event => {
   if (!toolsMenu.contains(event.target)) toolsMenu.classList.remove('open');
+  if (!sectorPicker.contains(event.target) && !sectorToggleBtn.contains(event.target)) {
+    sectorPicker.classList.remove('open');
+    sectorToggleBtn.setAttribute('aria-expanded', 'false');
+  }
 });
 
 els.search.addEventListener('input', renderFilteredClients);
@@ -585,6 +589,25 @@ document.querySelector('.admin-stats').addEventListener('click', event => {
   const card = event.target.closest('[data-stat-filter]');
   if (!card) return;
   state.statusFilter = card.dataset.statFilter;
+  if (state.statusFilter === 'todos') state.routerFilter = 'todos';
+  renderFilteredClients();
+  document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+sectorToggleBtn.addEventListener('click', event => {
+  event.stopPropagation();
+  const open = sectorPicker.classList.toggle('open');
+  sectorToggleBtn.setAttribute('aria-expanded', String(open));
+});
+
+sectorPicker.addEventListener('click', event => {
+  const button = event.target.closest('[data-router-filter]');
+  if (!button) return;
+  state.routerFilter = state.routerFilter === button.dataset.routerFilter
+    ? 'todos'
+    : button.dataset.routerFilter;
+  sectorPicker.classList.remove('open');
+  sectorToggleBtn.setAttribute('aria-expanded', 'false');
   renderFilteredClients();
   document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
@@ -613,7 +636,6 @@ els.detail.addEventListener('click', event => {
   const client = state.clients.find(item => item.id === state.selectedId);
   if (!client) return;
 
-  if (action === 'edit') return openClientDialog(client);
   if (action === 'schedule-cut') return openScheduleDialog(client);
   if (action === 'delete') return deleteSelectedClient(client).catch(error => alert(error.message));
   return performAction(action).catch(error => alert(error.message));

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel | Infinit Flores</title>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=7"/>
+  <link rel="stylesheet" href="admin.css?v=8"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -78,14 +78,16 @@
         <strong id="statExpired">0</strong>
         <small>corte automatico</small>
       </button>
-      <article class="stat-card sector-stat">
+      <button class="stat-card sector-stat" type="button" id="sectorToggleBtn" aria-expanded="false">
         <span>Sectores</span>
-        <div class="sector-counts">
-          <small><b>RB4011</b><strong id="statRb4011">0</strong></small>
-          <small><b>RB750</b><strong id="statRb750">0</strong></small>
-          <small><b>E50UG</b><strong id="statE50ug">0</strong></small>
-        </div>
-      </article>
+        <strong>3</strong>
+        <small id="sectorSelectionLabel">Seleccionar equipo</small>
+      </button>
+      <div class="sector-picker" id="sectorPicker" aria-label="Filtrar por equipo">
+        <button type="button" data-router-filter="rb4011"><span>RB4011</span><strong id="statRb4011">0</strong></button>
+        <button type="button" data-router-filter="rb750"><span>RB750</span><strong id="statRb750">0</strong></button>
+        <button type="button" data-router-filter="e50ug"><span>E50UG</span><strong id="statE50ug">0</strong></button>
+      </div>
     </section>
 
     <section class="admin-panel">
@@ -257,6 +259,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=7"></script>
+  <script src="admin.js?v=8"></script>
 </body>
 </html>
