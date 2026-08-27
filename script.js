@@ -232,102 +232,6 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && productModal?.classList.contains('open')) closeProductModal();
 });
 
-const metodoInfo = document.getElementById('metodoInfo');
-const metodoRadios = document.querySelectorAll('input[name="metodo"]');
-const diaSelect = document.getElementById('pDia');
-
-if (diaSelect && diaSelect.options.length <= 1) {
-  for (let i = 1; i <= 31; i += 1) {
-    const option = document.createElement('option');
-    option.value = String(i);
-    option.textContent = String(i);
-    diaSelect.appendChild(option);
-  }
-}
-
-function getMetodoDetalle(metodo) {
-  switch (metodo) {
-    case 'Tigo Money':
-      return {
-        resumen: 'Numero Tigo Money: 67236144',
-        extra: '<p><strong>Tigo Money:</strong> 67236144</p>'
-      };
-    case 'QR Bancario':
-      return {
-        resumen: 'QR Bancario',
-        extra: '<p><strong>QR Bancario:</strong> escanea el codigo para pagar.</p><img src="imagenes/WhatsApp Image 2026-02-21 at 22.44.17.jpeg" alt="QR Bancario" class="method-qr"/>'
-      };
-    case 'Transferencia bancaria':
-      return {
-        resumen: 'Cuenta bancaria: 10000027518105',
-        extra: '<p><strong>Transferencia bancaria:</strong> 10000027518105</p>'
-      };
-    case 'Efectivo':
-      return {
-        resumen: 'Pago en efectivo',
-        extra: '<p><strong>Efectivo:</strong> pago directo en persona.</p>'
-      };
-    default:
-      return {
-        resumen: '',
-        extra: '<p>Selecciona un metodo para ver los datos de pago.</p>'
-      };
-  }
-}
-
-function actualizarMetodoInfo() {
-  if (!metodoInfo) return;
-  const seleccionado = document.querySelector('input[name="metodo"]:checked');
-  const detalle = getMetodoDetalle(seleccionado?.value || '');
-  metodoInfo.innerHTML = detalle.extra;
-  metodoInfo.classList.toggle('show', Boolean(seleccionado));
-}
-
-metodoRadios.forEach(radio => radio.addEventListener('change', actualizarMetodoInfo));
-actualizarMetodoInfo();
-
-function enviarPago(event) {
-  event.preventDefault();
-
-  const nombre = document.getElementById('pNombre')?.value.trim();
-  const carnet = document.getElementById('pCarnet')?.value.trim();
-  const servicio = document.getElementById('pServicio')?.value;
-  const dia = document.getElementById('pDia')?.value;
-  const mes = document.getElementById('pMes')?.value;
-  const metodo = document.querySelector('input[name="metodo"]:checked');
-  const nota = document.getElementById('pNota')?.value.trim();
-
-  if (!metodo) {
-    alert('Por favor selecciona un metodo de pago.');
-    return;
-  }
-
-  const detalleMetodo = getMetodoDetalle(metodo.value);
-  const mensaje = [
-    '*PAGO DE SERVICIO - INFINIT FLORES*',
-    '',
-    `Nombre: ${nombre}`,
-    `Carnet de identidad: ${carnet}`,
-    `Servicio: ${servicio}`,
-    `Fecha de pago: Dia ${dia} - ${mes}`,
-    `Metodo de pago: ${metodo.value}`,
-    detalleMetodo.resumen ? `Dato de pago: ${detalleMetodo.resumen}` : '',
-    nota ? `Comprobante/Nota: ${nota}` : '',
-    '',
-    'Por favor confirmar recepcion del pago. Gracias.'
-  ].filter(Boolean).join('\n');
-
-  const formOk = document.getElementById('formOk');
-  formOk?.classList.add('show');
-
-  setTimeout(() => {
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`, '_blank');
-    document.getElementById('pagoForm')?.reset();
-    actualizarMetodoInfo();
-    setTimeout(() => formOk?.classList.remove('show'), 2500);
-  }, 500);
-}
-
 const chatForm = document.getElementById('chatForm');
 const chatInput = document.getElementById('chatInput');
 const chatMessages = document.getElementById('chatMessages');
@@ -413,6 +317,48 @@ const demoCustomers = [
   }
 ];
 
+const CASH_PAYMENT_ADDRESS = 'Final avenida Vernal, una cuadra antes de llegar a FATECIPOL.';
+
+function manualPaymentDetail(method) {
+  const details = {
+    'Tigo Money': {
+      icon: 'fa-mobile-screen',
+      title: 'Tigo Money',
+      text: 'Envia el monto al numero 67236144 y guarda la captura o numero de transaccion.'
+    },
+    'Transferencia bancaria': {
+      icon: 'fa-building-columns',
+      title: 'Transferencia bancaria',
+      text: 'Transfiere a la cuenta 10000027518105 y guarda el comprobante.'
+    },
+    'QR bancario estatico': {
+      icon: 'fa-qrcode',
+      title: 'QR bancario estatico',
+      text: 'Escanea el QR, realiza el pago y guarda la captura del comprobante.',
+      image: 'imagenes/WhatsApp Image 2026-02-21 at 22.44.17.jpeg'
+    },
+    'Pago en efectivo': {
+      icon: 'fa-money-bill-wave',
+      title: 'Pago en efectivo',
+      text: CASH_PAYMENT_ADDRESS
+    }
+  };
+  return details[method] || details['Tigo Money'];
+}
+
+function renderManualPaymentDetail(method) {
+  const detail = manualPaymentDetail(method);
+  return `
+    <div class="manual-payment-detail">
+      <div class="manual-payment-detail-head">
+        <i class="fas ${detail.icon}" aria-hidden="true"></i>
+        <div><strong>${detail.title}</strong><span>${detail.text}</span></div>
+      </div>
+      ${detail.image ? `<img src="${detail.image}" alt="QR bancario estatico para pagar el servicio Infinit"/>` : ''}
+    </div>
+  `;
+}
+
 function remainingServiceTime(dateValue) {
   const end = new Date(dateValue);
   const diff = end - new Date();
@@ -495,10 +441,37 @@ function renderCustomer(customer) {
           <div><span>${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}</span><strong>Bs. ${escapeHtml(payment.monto)}</strong></div>
         `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
-      <button class="btn primary full" type="button" data-pay-customer="${escapeHtml(customer.id || customer.ci)}">
-        <i class="fas fa-qrcode"></i> Pagar ahora con QR
-      </button>
-      <div class="qr-result" id="qrResult"></div>
+      <section class="manual-payment" aria-labelledby="manualPaymentTitle">
+        <div class="manual-payment-heading">
+          <div>
+            <span>Pago manual</span>
+            <h3 id="manualPaymentTitle">Elige como quieres pagar</h3>
+          </div>
+          <span class="review-chip"><i class="fas fa-user-check"></i> Revision manual</span>
+        </div>
+        <p class="manual-payment-intro">Despues de pagar, envia los datos por WhatsApp y adjunta tu comprobante. La recarga se realiza solo despues de verificar el pago.</p>
+        <form class="customer-payment-form" data-customer-payment-form>
+          <input type="hidden" name="customerName" value="${escapeHtml(customer.nombre)}"/>
+          <input type="hidden" name="customerCi" value="${escapeHtml(customer.ci)}"/>
+          <input type="hidden" name="customerPlan" value="${escapeHtml(customer.plan)}"/>
+          <input type="hidden" name="customerAmount" value="${escapeHtml(customer.precio)}"/>
+          <fieldset class="customer-payment-methods">
+            <legend>Metodo de pago</legend>
+            <label><input type="radio" name="manualMethod" value="Tigo Money" checked/><span><i class="fas fa-mobile-screen"></i>Tigo Money</span></label>
+            <label><input type="radio" name="manualMethod" value="Transferencia bancaria"/><span><i class="fas fa-building-columns"></i>Transferencia</span></label>
+            <label><input type="radio" name="manualMethod" value="QR bancario estatico"/><span><i class="fas fa-qrcode"></i>QR bancario</span></label>
+            <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
+          </fieldset>
+          <div data-manual-payment-detail>${renderManualPaymentDetail('Tigo Money')}</div>
+          <label class="customer-reference">
+            <span>Referencia o numero de transaccion</span>
+            <input name="paymentReference" type="text" maxlength="100" placeholder="Ejemplo: 458721 o Pago en efectivo" required/>
+            <small>No escribas datos bancarios sensibles. Solo la referencia del pago.</small>
+          </label>
+          <button class="btn whatsapp full" type="submit"><i class="fab fa-whatsapp"></i> Enviar comprobante por WhatsApp</button>
+          <p class="payment-warning"><i class="fas fa-circle-info"></i> WhatsApp se abrira con tus datos. Adjunta alli la foto o captura del comprobante.</p>
+        </form>
+      </section>
     </div>
   `;
 }
@@ -543,45 +516,37 @@ async function lookupCustomer(ci) {
   }
 }
 
-document.addEventListener('click', async event => {
-  const button = event.target.closest('[data-pay-customer]');
-  if (!button) return;
+document.addEventListener('change', event => {
+  const method = event.target.closest('input[name="manualMethod"]');
+  if (!method) return;
+  const form = method.closest('[data-customer-payment-form]');
+  const target = form?.querySelector('[data-manual-payment-detail]');
+  if (target) target.innerHTML = renderManualPaymentDetail(method.value);
+});
 
-  const qrTarget = document.getElementById('qrResult');
-  const customerId = button.dataset.payCustomer;
-  if (!qrTarget || !customerId) return;
+document.addEventListener('submit', event => {
+  const form = event.target.closest('[data-customer-payment-form]');
+  if (!form) return;
+  event.preventDefault();
 
-  button.disabled = true;
-  qrTarget.innerHTML = '<div class="qr-box"><strong>Generando QR...</strong><span>Un momento por favor.</span></div>';
+  const formData = new FormData(form);
+  const method = String(formData.get('manualMethod') || '');
+  const reference = String(formData.get('paymentReference') || '').trim();
+  const message = [
+    '*COMPROBANTE DE PAGO - INFINIT*',
+    '',
+    `Nombre: ${formData.get('customerName') || ''}`,
+    `Carnet: ${formData.get('customerCi') || ''}`,
+    `Plan: ${formData.get('customerPlan') || ''}`,
+    `Monto: Bs. ${formData.get('customerAmount') || '0'}`,
+    `Metodo: ${method}`,
+    `Referencia: ${reference}`,
+    '',
+    'Adjuntare el comprobante en este chat.',
+    'Solicito la revision manual de mi pago y la recarga del servicio.'
+  ].join('\n');
 
-  try {
-    const response = await fetch(localApiUrl('/api/qr-create'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data?.error || 'No se pudo generar el QR.');
-
-    const qr = data.qr || {};
-    qrTarget.innerHTML = `
-      <div class="qr-box">
-        <strong>Pago QR Bs. ${Number(data.amount || 0).toFixed(0)}</strong>
-        ${qr.qrImage ? `<img src="${escapeHtml(qr.qrImage)}" alt="QR de pago"/>` : ''}
-        ${qr.qrText ? `<code>${escapeHtml(qr.qrText)}</code>` : ''}
-        <span>${escapeHtml(qr.message || 'Escanea el QR. Al confirmarse el pago, tu servicio se recargara automaticamente.')}</span>
-      </div>
-    `;
-  } catch (error) {
-    qrTarget.innerHTML = `
-      <div class="qr-box danger">
-        <strong>No se pudo generar el QR</strong>
-        <span>${escapeHtml(error.message)}</span>
-      </div>
-    `;
-  } finally {
-    button.disabled = false;
-  }
+  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
 });
 
 const cart = {
@@ -770,5 +735,3 @@ function toggleChatWidget(forceOpen = null) {
 
 aiFloatBtn?.addEventListener('click', () => toggleChatWidget());
 chatClose?.addEventListener('click', () => toggleChatWidget(false));
-
-window.enviarPago = enviarPago;
