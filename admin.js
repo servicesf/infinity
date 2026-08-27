@@ -320,8 +320,6 @@ function renderDetail() {
         <small>${countdown.dateLabel}</small>
       </div>
       <div class="detail-item"><span>Mensualidad</span><strong>${formatMoney(client.precio)}</strong></div>
-      <div class="detail-item"><span>Plan</span><strong>${client.plan}</strong></div>
-      <div class="detail-item"><span>Router</span><strong>${client.router?.name || '-'}</strong></div>
       <div class="detail-item"><span>Corte auto</span><strong>${client.autoCutEnabled ? 'Activado' : 'No'}</strong></div>
     </div>
 
@@ -385,15 +383,15 @@ async function checkAuth() {
 
 async function performAction(action, options = {}) {
   const client = state.clients.find(item => item.id === state.selectedId);
-  if (!client) return;
+  if (!client) return false;
 
   const labels = {
     recharge: `Aviso: vas a recargar 30 días + 3 horas a ${client.nombre}. ¿Confirmar?`,
     'schedule-cut': `Programar corte para ${client.nombre}?`,
-    cut: `Marcar corte y mandar accion pendiente para ${client.nombre}?`,
+    cut: `Aviso: vas a cortar el servicio de ${client.nombre} ahora. ¿Confirmar?`,
     enable: `Activar y mandar accion pendiente para ${client.nombre}?`
   };
-  if (!confirm(labels[action] || 'Confirmar accion?')) return;
+  if (!confirm(labels[action] || 'Confirmar accion?')) return false;
 
   await api('/api/admin-action', {
     method: 'POST',
@@ -404,6 +402,7 @@ async function performAction(action, options = {}) {
     })
   });
   await loadData();
+  return true;
 }
 
 async function deleteSelectedClient(client) {
@@ -541,6 +540,14 @@ document.getElementById('closeDialogBtn').addEventListener('click', () => els.di
 document.getElementById('cancelClientBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('closeScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
 document.getElementById('cancelScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
+document.getElementById('cutNowBtn').addEventListener('click', async () => {
+  try {
+    const completed = await performAction('cut');
+    if (completed) els.scheduleDialog.close();
+  } catch (error) {
+    alert(error.message);
+  }
+});
 
 document.getElementById('clientPlan').addEventListener('input', event => {
   const price = planPrices[event.target.value];

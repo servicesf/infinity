@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel | Infinit Flores</title>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=8"/>
+  <link rel="stylesheet" href="admin.css?v=9"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -245,20 +245,22 @@
       <p class="dialog-note" id="scheduleClientName">Selecciona fecha y hora exacta de corte.</p>
       <input type="hidden" id="scheduleClientId"/>
       <div class="form-row">
-        <label for="scheduleDueAt">Fecha y hora de corte</label>
+        <label for="scheduleDueAt">Fecha y hora de corte (hora de Bolivia)</label>
         <input id="scheduleDueAt" type="datetime-local" required/>
       </div>
       <label class="check-row" for="scheduleAutoCut">
         <input id="scheduleAutoCut" type="checkbox" checked/>
         <span>Ejecutar corte automatico cuando llegue la fecha</span>
       </label>
-      <div class="dialog-actions">
+      <p class="schedule-help"><i class="fas fa-circle-info"></i> Esta opción programa solamente el corte. La recarga se activa en el momento de confirmarla.</p>
+      <div class="dialog-actions schedule-actions">
+        <button class="btn danger" type="button" id="cutNowBtn"><i class="fas fa-power-off"></i> Cortar ahora</button>
         <button class="btn ghost" type="button" id="cancelScheduleBtn">Cancelar</button>
         <button class="btn primary" type="submit"><i class="fas fa-calendar-check"></i> Guardar corte</button>
       </div>
     </form>
   </dialog>
 
-  <script src="admin.js?v=8"></script>
+  <script src="admin.js?v=9"></script>
 </body>
 </html>

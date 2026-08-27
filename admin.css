@@ -815,7 +815,7 @@ button.stat-card:focus-visible {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 14px 0;
 }
@@ -826,9 +826,10 @@ button.stat-card:focus-visible {
 
 .detail-summary {
   display: grid;
+  grid-column: 1 / -1;
   gap: 4px;
   padding: 14px;
-  margin: 14px 0 10px;
+  margin: 0;
   border-radius: var(--radius);
   background: #eef9ff;
   border: 1px solid #bce8f7;
@@ -922,12 +923,13 @@ button.stat-card:focus-visible {
 
 .detail-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
   margin-bottom: 14px;
 }
 
 .detail-actions .btn.danger {
+  grid-column: 1 / -1;
   border-color: #f1b8b4;
   color: #b42318;
   background: #fff4f2;
@@ -1003,6 +1005,25 @@ button.stat-card:focus-visible {
   font-weight: 700;
 }
 
+.schedule-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eef9ff;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.schedule-help i {
+  margin-top: 2px;
+  color: var(--blue);
+}
+
 .client-dialog::backdrop {
   background: rgba(18, 48, 71, 0.4);
 }
@@ -1030,6 +1051,18 @@ button.stat-card:focus-visible {
   background: #fff;
   color: var(--ink);
   cursor: pointer;
+}
+
+.schedule-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.schedule-actions .btn.danger {
+  grid-column: 1 / -1;
+  border-color: #f1b8b4;
+  background: #fff4f2;
+  color: #b42318;
 }
 
 .check-row {
@@ -1196,7 +1229,15 @@ button.stat-card:focus-visible {
   .client-layout {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    width: 100%;
     gap: 12px;
+  }
+
+  .client-card-grid,
+  .client-detail {
+    width: 100%;
+    min-width: 0;
   }
 
   .client-card-grid {
@@ -1370,8 +1411,6 @@ button.stat-card:focus-visible {
     padding: 0 8px;
   }
 
-  .detail-actions,
-  .detail-grid,
   .work-summary,
   .income-grid,
   .income-controls,
@@ -1409,7 +1448,7 @@ button.stat-card:focus-visible {
 
   .client-detail {
     min-height: auto;
-    padding: 14px;
+    padding: 11px;
     border-radius: 12px;
     box-shadow: 0 12px 34px rgba(0, 39, 94, 0.1);
   }
@@ -1440,7 +1479,7 @@ button.stat-card:focus-visible {
 
   .detail-summary {
     margin: 0;
-    padding: 12px;
+    padding: 10px;
   }
 
   .detail-summary strong {
@@ -1448,7 +1487,7 @@ button.stat-card:focus-visible {
   }
 
   .detail-item {
-    padding: 10px;
+    padding: 9px;
   }
 
   .detail-actions {
@@ -1456,10 +1495,21 @@ button.stat-card:focus-visible {
   }
 
   .detail-actions .btn {
-    min-height: 46px;
+    min-height: 40px;
     padding: 0 10px;
-    border-radius: 999px;
-    font-size: 0.95rem;
+    border-radius: 12px;
+    font-size: 0.84rem;
+  }
+
+  .schedule-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .schedule-actions .btn {
+    min-height: 42px;
+    padding: 0 9px;
+    font-size: 0.84rem;
   }
 
   .payment-history {
