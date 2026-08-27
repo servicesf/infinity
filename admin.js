@@ -2,7 +2,8 @@ const state = {
   clients: [],
   payments: [],
   selectedId: null,
-  authenticated: false
+  authenticated: false,
+  statusFilter: 'todos'
 };
 
 const planPrices = {
@@ -21,15 +22,13 @@ const els = {
   tbody: document.getElementById('clientsTbody'),
   detail: document.getElementById('clientDetail'),
   search: document.getElementById('searchInput'),
-  router: document.getElementById('routerFilter'),
-  sector: document.getElementById('sectorFilter'),
-  status: document.getElementById('statusFilter'),
   stats: {
     total: document.getElementById('statTotal'),
     active: document.getElementById('statActive'),
     expired: document.getElementById('statExpired'),
-    cut: document.getElementById('statCut'),
-    revenue: document.getElementById('statRevenue')
+    rb4011: document.getElementById('statRb4011'),
+    rb750: document.getElementById('statRb750'),
+    e50ug: document.getElementById('statE50ug')
   },
   dialog: document.getElementById('clientDialog'),
   form: document.getElementById('clientForm'),
@@ -41,29 +40,20 @@ const authEls = {
   loginForm: document.getElementById('loginForm'),
   loginUser: document.getElementById('loginUser'),
   loginPassword: document.getElementById('loginPassword'),
-  loginError: document.getElementById('loginError'),
-  logoutBtn: document.getElementById('logoutBtn')
+  loginError: document.getElementById('loginError')
 };
 
-const bridgeState = document.getElementById('bridgeState');
 const incomeGrid = document.getElementById('incomeGrid');
 const toolsMenu = document.querySelector('.tools-menu');
 const toolsMenuBtn = document.getElementById('toolsMenuBtn');
-const incomeYearFilter = document.getElementById('incomeYearFilter');
-const incomeMonthFilter = document.getElementById('incomeMonthFilter');
-const incomeViewBtn = document.getElementById('incomeViewBtn');
-let incomeViewMode = 'cards';
+const chartDialog = document.getElementById('chartDialog');
+const incomeFrom = document.getElementById('incomeFrom');
+const incomeTo = document.getElementById('incomeTo');
 
 function setLoggedIn(loggedIn) {
   state.authenticated = loggedIn;
   document.body.classList.toggle('admin-locked', !loggedIn);
   authEls.loginError.classList.remove('show');
-}
-
-function setBridgeState(text, mode = 'warning') {
-  bridgeState.classList.toggle('online', mode === 'online');
-  bridgeState.classList.toggle('warning', mode !== 'online');
-  bridgeState.innerHTML = `<i class="fas fa-circle"></i> ${text}`;
 }
 
 async function readJsonResponse(response) {
@@ -160,28 +150,6 @@ function routerName(client) {
   return client.router?.name || 'Router sin asignar';
 }
 
-function renderRouterFilter() {
-  const selected = els.router.value || 'todos';
-  const routers = new Map();
-
-  state.clients.forEach(client => {
-    const key = routerKey(client);
-    const current = routers.get(key);
-    routers.set(key, {
-      name: routerName(client),
-      count: (current?.count || 0) + 1
-    });
-  });
-
-  const options = Array.from(routers.entries())
-    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'es'))
-    .map(([key, router]) => `<option value="${key}">${router.name} (${router.count})</option>`)
-    .join('');
-
-  els.router.innerHTML = `<option value="todos">Todos los routers (${state.clients.length})</option>${options}`;
-  els.router.value = selected === 'todos' || routers.has(selected) ? selected : 'todos';
-}
-
 function filteredClients() {
   const q = els.search.value.trim().toLowerCase();
   return state.clients.filter(client => {
@@ -199,66 +167,80 @@ function filteredClients() {
     ].join(' ').toLowerCase();
 
     return (!q || text.includes(q))
-      && (els.router.value === 'todos' || routerKey(client) === els.router.value)
-      && (els.sector.value === 'todos' || client.sector === els.sector.value)
-      && (els.status.value === 'todos' || status === els.status.value);
+      && (state.statusFilter === 'todos' || status === state.statusFilter);
   });
+}
+
+function routerGroup(client) {
+  const text = `${client.router?.code || ''} ${client.router?.name || ''}`.toLowerCase();
+  if (text.includes('rb4011')) return 'rb4011';
+  if (text.includes('rb750')) return 'rb750';
+  if (text.includes('e50ug')) return 'e50ug';
+  return 'otro';
+}
+
+function shortRouterName(client) {
+  const group = routerGroup(client);
+  if (group === 'rb4011') return 'RB4011';
+  if (group === 'rb750') return 'RB750';
+  if (group === 'e50ug') return 'E50UG';
+  return client.router?.code || client.router?.name || 'Sin router';
 }
 
 function renderStats() {
   const statuses = state.clients.map(getEffectiveStatus);
-  const now = new Date();
-  const currentMonth = now.toISOString().slice(0, 7);
-  const revenue = state.payments
-    .filter(payment => payment.status === 'confirmado' && String(payment.paid_at || '').startsWith(currentMonth))
-    .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const routerCounts = { rb4011: 0, rb750: 0, e50ug: 0 };
+  state.clients.forEach(client => {
+    const group = routerGroup(client);
+    if (group in routerCounts) routerCounts[group] += 1;
+  });
 
   els.stats.total.textContent = state.clients.length;
   els.stats.active.textContent = statuses.filter(status => status === 'activo').length;
   els.stats.expired.textContent = statuses.filter(status => status === 'vencido').length;
-  els.stats.cut.textContent = statuses.filter(status => status === 'cortado').length;
-  els.stats.revenue.textContent = formatMoney(revenue);
+  els.stats.rb4011.textContent = routerCounts.rb4011;
+  els.stats.rb750.textContent = routerCounts.rb750;
+  els.stats.e50ug.textContent = routerCounts.e50ug;
+}
+
+function syncStatFilterState() {
+  document.querySelectorAll('[data-stat-filter]').forEach(card => {
+    const selected = card.dataset.statFilter === state.statusFilter;
+    card.classList.toggle('active', selected);
+    card.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function renderIncome() {
-  const year = incomeYearFilter.value;
-  const month = incomeMonthFilter.value;
+  const from = incomeFrom.value;
+  const to = incomeTo.value;
   const confirmed = state.payments.filter(payment => {
     if (payment.status !== 'confirmado') return false;
-    const date = String(payment.paid_at || '');
-    return (year === 'todos' || date.startsWith(year))
-      && (month === 'todos' || date.slice(5, 7) === month);
+    const date = String(payment.paid_at || '').slice(0, 10);
+    return (!from || date >= from) && (!to || date <= to);
   });
   const total = confirmed.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const average = confirmed.length ? total / confirmed.length : 0;
-
-  if (incomeViewMode === 'chart') {
-    const byMonth = new Map();
-    for (const payment of confirmed) {
-      const key = String(payment.paid_at || '').slice(0, 7) || 'Sin fecha';
-      byMonth.set(key, (byMonth.get(key) || 0) + Number(payment.amount || 0));
-    }
-    const max = Math.max(...byMonth.values(), 1);
-    incomeGrid.innerHTML = Array.from(byMonth.entries()).map(([label, amount]) => `
-      <div class="income-card chart-row">
-        <span>${label}</span>
-        <div class="bar"><i style="width:${Math.max(8, (amount / max) * 100)}%"></i></div>
-        <strong>${formatMoney(amount)}</strong>
-      </div>
-    `).join('') || '<div class="income-card"><strong>Sin pagos</strong><span>No hay datos en este periodo.</span></div>';
-    return;
+  const byMonth = new Map();
+  for (const payment of confirmed) {
+    const key = String(payment.paid_at || '').slice(0, 7) || 'Sin fecha';
+    byMonth.set(key, (byMonth.get(key) || 0) + Number(payment.amount || 0));
   }
-
-  incomeGrid.innerHTML = `
-    <div class="income-card"><span>Total</span><strong>${formatMoney(total)}</strong><small>${confirmed.length} pagos</small></div>
-    <div class="income-card"><span>Promedio</span><strong>${formatMoney(average)}</strong><small>por recarga</small></div>
-    <div class="income-card"><span>Periodo</span><strong>${year === 'todos' ? 'Todos' : year}</strong><small>${month === 'todos' ? 'todos los meses' : month}</small></div>
-  `;
-}
-
-function renderIncomeFilters() {
-  const years = Array.from(new Set(state.payments.map(payment => String(payment.paid_at || '').slice(0, 4)).filter(Boolean))).sort().reverse();
-  incomeYearFilter.innerHTML = '<option value="todos">Todos los anos</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+  const max = Math.max(...byMonth.values(), 1);
+  const monthFormatter = new Intl.DateTimeFormat('es-BO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  document.getElementById('incomeTotal').textContent = formatMoney(total);
+  document.getElementById('incomePaymentCount').textContent = `${confirmed.length} pagos confirmados`;
+  incomeGrid.innerHTML = Array.from(byMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, amount]) => {
+      const date = /^\d{4}-\d{2}$/.test(label) ? new Date(`${label}-01T00:00:00Z`) : null;
+      const monthLabel = date ? monthFormatter.format(date) : label;
+      return `
+        <div class="chart-row">
+          <span>${monthLabel}</span>
+          <div class="chart-track"><i class="chart-bar" style="width:${Math.max(4, (amount / max) * 100)}%"></i></div>
+          <strong>${formatMoney(amount)}</strong>
+        </div>`;
+    }).join('') || '<div class="income-empty"><strong>Sin pagos</strong><span>No hay datos confirmados en este período.</span></div>';
 }
 
 function renderClients() {
@@ -271,22 +253,26 @@ function renderClients() {
       ? `PPPoE ${client.pppoe}`
       : `Queue ${client.queue || '-'}${client.ip ? ` · IP ${client.ip}` : ''}`;
     return `
-      <tr class="${selected}" data-id="${client.id}">
-        <td data-label="Cliente">
+      <article class="client-card ${selected}" data-id="${client.id}">
+        <div class="client-card-head">
+          <div>
           <strong>${client.nombre}</strong>
           <span>${formatCi(client.ci)} · ${client.telefono || 'sin telefono'}</span>
-          <small class="router-chip"><i class="fas fa-server"></i>${routerName(client)}</small>
-        </td>
-        <td data-label="Servicio">
+          </div>
+          <span class="state-pill ${status}">${status}</span>
+        </div>
+        <div class="client-service-line">
+          <small class="router-chip"><i class="fas fa-server"></i>${shortRouterName(client)}</small>
           <strong>${client.plan}</strong>
-          <span>${client.sector} · ${accessLabel}</span>
-        </td>
-        <td data-label="Vence">
+        </div>
+        <div class="client-card-foot">
+          <span>${accessLabel}</span>
+          <div class="client-due">
           <strong class="${countdown.tone}">${countdown.label}</strong>
-          <span>${countdown.dateLabel}</span>
-        </td>
-        <td data-label="Estado"><span class="state-pill ${status}">${status}</span></td>
-      </tr>
+          <small>${countdown.dateLabel}</small>
+          </div>
+        </div>
+      </article>
     `;
   }).join('');
 }
@@ -369,6 +355,7 @@ function renderFilteredClients() {
   }
   renderClients();
   renderDetail();
+  syncStatFilterState();
 }
 
 async function loadData() {
@@ -379,8 +366,6 @@ async function loadData() {
   if (state.selectedId && !state.clients.some(client => client.id === state.selectedId)) {
     state.selectedId = state.clients[0]?.id || null;
   }
-  renderRouterFilter();
-  renderIncomeFilters();
   renderAll();
 }
 
@@ -388,11 +373,9 @@ async function checkAuth() {
   try {
     const data = await api('/api/admin-status');
     setLoggedIn(Boolean(data.authenticated));
-    setBridgeState(data.authenticated ? 'Panel conectado' : data.configured ? 'Login requerido' : 'Configurar admin', data.authenticated ? 'online' : 'warning');
     if (data.authenticated) await loadData();
   } catch (error) {
     setLoggedIn(false);
-    setBridgeState('Configurar admin');
     authEls.loginError.textContent = error.message;
     authEls.loginError.classList.add('show');
   }
@@ -449,6 +432,16 @@ function openClientDialog(client = null) {
   document.getElementById('clientSector').value = client?.sector || 'fibra';
   document.getElementById('clientPlan').value = client?.plan || 'Fibra 50 Mbps';
   document.getElementById('clientPrice').value = client?.precio || planPrices['Fibra 50 Mbps'] || 150;
+  const routerSelect = document.getElementById('clientRouter');
+  const routers = new Map();
+  state.clients.forEach(item => {
+    if (item.routerId && item.router?.name) routers.set(item.routerId, item.router.name);
+  });
+  routerSelect.innerHTML = Array.from(routers.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], 'es'))
+    .map(([id, name]) => `<option value="${id}">${name}</option>`)
+    .join('');
+  routerSelect.value = client?.routerId || routerSelect.options[0]?.value || '';
   document.getElementById('clientPppoe').value = client?.pppoe || '';
   document.getElementById('clientQueue').value = client?.queue || '';
   document.getElementById('clientIp').value = client?.ip || '';
@@ -484,6 +477,7 @@ async function handleClientSubmit(event) {
     sector: document.getElementById('clientSector').value,
     plan: document.getElementById('clientPlan').value,
     precio: Number(document.getElementById('clientPrice').value || 0),
+    routerId: document.getElementById('clientRouter').value,
     pppoe: document.getElementById('clientPppoe').value.trim(),
     queue: document.getElementById('clientQueue').value.trim(),
     ip: document.getElementById('clientIp').value.trim(),
@@ -523,7 +517,6 @@ authEls.loginForm.addEventListener('submit', async event => {
     });
     authEls.loginPassword.value = '';
     setLoggedIn(true);
-    setBridgeState('Panel conectado', 'online');
     await loadData();
   } catch (error) {
     authEls.loginError.textContent = error.message;
@@ -531,17 +524,19 @@ authEls.loginForm.addEventListener('submit', async event => {
   }
 });
 
-authEls.logoutBtn.addEventListener('click', async () => {
-  await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
-  setLoggedIn(false);
-  setBridgeState('Login requerido');
+document.getElementById('newClientBtn').addEventListener('click', () => {
+  toolsMenu.classList.remove('open');
+  openClientDialog();
 });
-
-document.getElementById('newClientBtn').addEventListener('click', () => openClientDialog());
-document.getElementById('syncMikrotikBtn').addEventListener('click', () => loadData());
-document.getElementById('setThirtyDaysBtn').addEventListener('click', () => alert('Lo haremos desde una accion masiva segura, solo para activos, despues de probar cortes con la VPS.'));
-document.getElementById('exportBtn').addEventListener('click', exportData);
-document.getElementById('clearPanelBtn').addEventListener('click', () => alert('Por seguridad no se permite limpiar clientes importados desde este panel.'));
+document.getElementById('chartBtn').addEventListener('click', () => {
+  toolsMenu.classList.remove('open');
+  renderIncome();
+  chartDialog.showModal();
+});
+document.getElementById('exportBtn').addEventListener('click', () => {
+  toolsMenu.classList.remove('open');
+  exportData();
+});
 document.getElementById('closeDialogBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('cancelClientBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('closeScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
@@ -584,22 +579,27 @@ document.addEventListener('click', event => {
   if (!toolsMenu.contains(event.target)) toolsMenu.classList.remove('open');
 });
 
-[els.search, els.router, els.sector, els.status].forEach(input => {
-  input.addEventListener('input', renderFilteredClients);
-  input.addEventListener('change', renderFilteredClients);
+els.search.addEventListener('input', renderFilteredClients);
+
+document.querySelector('.admin-stats').addEventListener('click', event => {
+  const card = event.target.closest('[data-stat-filter]');
+  if (!card) return;
+  state.statusFilter = card.dataset.statFilter;
+  renderFilteredClients();
+  document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-[incomeYearFilter, incomeMonthFilter].forEach(input => input.addEventListener('change', renderIncome));
-incomeViewBtn.addEventListener('click', () => {
-  incomeViewMode = incomeViewMode === 'cards' ? 'chart' : 'cards';
-  incomeViewBtn.innerHTML = incomeViewMode === 'cards'
-    ? '<i class="fas fa-chart-column"></i> Ver grafico'
-    : '<i class="fas fa-table-cells-large"></i> Ver tarjetas';
+incomeFrom.addEventListener('change', renderIncome);
+incomeTo.addEventListener('change', renderIncome);
+document.getElementById('incomeResetBtn').addEventListener('click', () => {
+  incomeFrom.value = '';
+  incomeTo.value = '';
   renderIncome();
 });
+document.getElementById('closeChartBtn').addEventListener('click', () => chartDialog.close());
 
 els.tbody.addEventListener('click', event => {
-  const row = event.target.closest('tr[data-id]');
+  const row = event.target.closest('[data-id]');
   if (!row) return;
   state.selectedId = row.dataset.id;
   renderClients();

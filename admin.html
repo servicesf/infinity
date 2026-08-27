@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Panel WISP | Infinit Flores</title>
+  <title>Panel | Infinit Flores</title>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css"/>
+  <link rel="stylesheet" href="admin.css?v=7"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -37,129 +37,70 @@
   </section>
 
   <header class="admin-topbar">
-    <a class="brand" href="index.html">
-      <img src="imagenes/WhatsApp Image 2026-02-23 at 14.57.51.jpeg" alt="Infinit Flores"/>
-      <span>
-        <strong>Panel WISP</strong>
-        <small>MikroTik + clientes</small>
-      </span>
-    </a>
+    <div class="admin-title">Panel</div>
     <div class="admin-top-actions">
-      <span class="bridge-state" id="bridgeState"><i class="fas fa-circle"></i> Modo preparacion</span>
       <div class="tools-menu">
         <button class="icon-menu-btn" type="button" id="toolsMenuBtn" aria-label="Funciones">
           <i class="fas fa-ellipsis-vertical"></i>
         </button>
         <div class="tools-dropdown" id="toolsDropdown">
-          <button class="tool-item" type="button" id="newClientBtn"><i class="fas fa-user-plus"></i> Nuevo cliente</button>
-          <button class="tool-item" type="button" id="syncMikrotikBtn"><i class="fas fa-rotate"></i> Actualizar datos</button>
-          <button class="tool-item" type="button" id="setThirtyDaysBtn"><i class="fas fa-calendar-check"></i> 30 dias a todos</button>
-          <button class="tool-item" type="button" id="exportBtn"><i class="fas fa-file-export"></i> Exportar datos</button>
-          <button class="tool-item danger" type="button" id="clearPanelBtn"><i class="fas fa-broom"></i> Limpiar panel</button>
+          <button class="tool-item" type="button" id="newClientBtn">
+            <i class="fas fa-user-plus"></i>
+            <span><strong>Nuevo cliente</strong><small>Registrar una instalación</small></span>
+          </button>
+          <button class="tool-item" type="button" id="chartBtn">
+            <i class="fas fa-chart-column"></i>
+            <span><strong>Gráfico</strong><small>Ganancias por período</small></span>
+          </button>
+          <button class="tool-item" type="button" id="exportBtn">
+            <i class="fas fa-file-export"></i>
+            <span><strong>Exportar respaldo</strong><small>Descargar clientes en JSON</small></span>
+          </button>
         </div>
       </div>
-      <button class="btn ghost" type="button" id="logoutBtn"><i class="fas fa-right-from-bracket"></i> Salir</button>
-      <a class="btn ghost" href="index.html"><i class="fas fa-globe"></i> Pagina</a>
     </div>
   </header>
 
   <main class="admin-app">
     <section class="admin-stats" aria-label="Resumen de clientes">
-      <article>
+      <button class="stat-card stat-filter active" type="button" data-stat-filter="todos" aria-pressed="true">
         <span>Clientes</span>
         <strong id="statTotal">0</strong>
         <small>registrados</small>
-      </article>
-      <article>
+      </button>
+      <button class="stat-card stat-filter" type="button" data-stat-filter="activo" aria-pressed="false">
         <span>Activos</span>
         <strong id="statActive">0</strong>
         <small>con servicio</small>
-      </article>
-      <article>
+      </button>
+      <button class="stat-card stat-filter" type="button" data-stat-filter="vencido" aria-pressed="false">
         <span>Vencidos</span>
         <strong id="statExpired">0</strong>
         <small>corte automatico</small>
+      </button>
+      <article class="stat-card sector-stat">
+        <span>Sectores</span>
+        <div class="sector-counts">
+          <small><b>RB4011</b><strong id="statRb4011">0</strong></small>
+          <small><b>RB750</b><strong id="statRb750">0</strong></small>
+          <small><b>E50UG</b><strong id="statE50ug">0</strong></small>
+        </div>
       </article>
-      <article>
-        <span>Cortados</span>
-        <strong id="statCut">0</strong>
-        <small>sin servicio</small>
-      </article>
-      <article>
-        <span>Ganancia mes</span>
-        <strong id="statRevenue">Bs. 0</strong>
-        <small>recargas registradas</small>
-      </article>
-    </section>
-
-    <section class="income-panel">
-      <div>
-        <h2>Ganancias por recarga</h2>
-        <p>Resumen mensual basado en pagos registrados desde el panel.</p>
-      </div>
-      <div class="income-controls">
-        <select id="incomeYearFilter" aria-label="Ano de ganancias">
-          <option value="todos">Todos los anos</option>
-        </select>
-        <select id="incomeMonthFilter" aria-label="Mes de ganancias">
-          <option value="todos">Todos los meses</option>
-          <option value="01">Enero</option>
-          <option value="02">Febrero</option>
-          <option value="03">Marzo</option>
-          <option value="04">Abril</option>
-          <option value="05">Mayo</option>
-          <option value="06">Junio</option>
-          <option value="07">Julio</option>
-          <option value="08">Agosto</option>
-          <option value="09">Septiembre</option>
-          <option value="10">Octubre</option>
-          <option value="11">Noviembre</option>
-          <option value="12">Diciembre</option>
-        </select>
-        <button class="mini-btn" type="button" id="incomeViewBtn"><i class="fas fa-chart-column"></i> Ver grafico</button>
-      </div>
-      <div class="income-grid" id="incomeGrid"></div>
     </section>
 
     <section class="admin-panel">
       <div class="panel-head">
         <div>
           <h2>Clientes</h2>
-          <p>Busca por nombre, CI, usuario PPPoE, IP, router, sector o telefono.</p>
+          <p>Busca por nombre, CI, usuario, equipo o plan.</p>
         </div>
         <div class="filters">
           <input id="searchInput" type="search" placeholder="Buscar cliente..."/>
-          <select id="routerFilter" aria-label="Filtrar clientes por router">
-            <option value="todos">Todos los routers</option>
-          </select>
-          <select id="sectorFilter">
-            <option value="todos">Todos los sectores</option>
-            <option value="fibra">Fibra optica</option>
-            <option value="inalambrico">Inalambrico</option>
-          </select>
-          <select id="statusFilter">
-            <option value="todos">Todos los estados</option>
-            <option value="activo">Activo</option>
-            <option value="vencido">Vencido</option>
-            <option value="cortado">Cortado</option>
-          </select>
         </div>
       </div>
 
       <div class="client-layout">
-        <div class="client-table-wrap">
-          <table class="client-table">
-            <thead>
-              <tr>
-                <th>Cliente</th>
-                <th>Servicio</th>
-                <th>Vencimiento</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody id="clientsTbody"></tbody>
-          </table>
-        </div>
+        <div class="client-card-grid" id="clientsTbody"></div>
 
         <aside class="client-detail" id="clientDetail">
           <div class="empty-detail">
@@ -172,12 +113,42 @@
     </section>
   </main>
 
+  <dialog class="client-dialog chart-dialog" id="chartDialog">
+    <div class="chart-dialog-content">
+      <div class="dialog-head">
+        <div>
+          <h3>Gráfico de ganancias</h3>
+          <p>Todos los meses por defecto.</p>
+        </div>
+        <button type="button" id="closeChartBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="chart-period">
+        <div class="form-row">
+          <label for="incomeFrom">Desde</label>
+          <input id="incomeFrom" type="date"/>
+        </div>
+        <div class="form-row">
+          <label for="incomeTo">Hasta</label>
+          <input id="incomeTo" type="date"/>
+        </div>
+        <button class="mini-btn" type="button" id="incomeResetBtn">Todos los meses</button>
+      </div>
+      <section class="chart-total" aria-live="polite">
+        <span>Total de ganancias</span>
+        <strong id="incomeTotal">Bs. 0</strong>
+        <small id="incomePaymentCount">0 pagos confirmados</small>
+      </section>
+      <div class="income-chart" id="incomeGrid"></div>
+    </div>
+  </dialog>
+
   <dialog class="client-dialog" id="clientDialog">
     <form method="dialog" class="client-form" id="clientForm">
       <div class="dialog-head">
         <h3 id="dialogTitle">Nuevo cliente</h3>
         <button type="button" id="closeDialogBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
+      <p class="dialog-note">Crea primero el acceso en MikroTik y registra aquí el usuario PPPoE y su router.</p>
       <input type="hidden" id="clientId"/>
       <div class="form-split">
         <div class="form-row">
@@ -224,9 +195,15 @@
       </div>
       <div class="form-split">
         <div class="form-row">
+          <label for="clientRouter">Router</label>
+          <select id="clientRouter" required></select>
+        </div>
+        <div class="form-row">
           <label for="clientPppoe">Usuario PPPoE</label>
           <input id="clientPppoe" placeholder="cliente001"/>
         </div>
+      </div>
+      <div class="form-split">
         <div class="form-row">
           <label for="clientQueue">Queue simple</label>
           <input id="clientQueue" placeholder="cliente001"/>
@@ -280,6 +257,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=6"></script>
+  <script src="admin.js?v=7"></script>
 </body>
 </html>
