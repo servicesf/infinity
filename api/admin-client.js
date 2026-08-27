@@ -23,11 +23,29 @@ function payloadToRow(payload) {
 }
 
 export default async function handler(req, res) {
-  if (!['POST', 'PATCH'].includes(req.method)) return res.status(405).json({ error: 'Metodo no permitido' });
+  if (!['POST', 'PATCH', 'DELETE'].includes(req.method)) return res.status(405).json({ error: 'Metodo no permitido' });
   if (!requireAdmin(req, res)) return;
 
   try {
     const payload = req.body || {};
+
+    if (req.method === 'DELETE') {
+      if (!payload.id) return res.status(400).json({ ok: false, error: 'Falta ID de cliente.' });
+
+      const rows = await supabaseFetch(`customers?select=id,full_name,pppoe_user,router_id&id=eq.${payload.id}&limit=1`, {
+        method: 'GET',
+        prefer: ''
+      });
+      const customer = Array.isArray(rows) ? rows[0] : null;
+      if (!customer) return res.status(404).json({ ok: false, error: 'Cliente no encontrado.' });
+
+      await supabaseFetch(`customers?id=eq.${payload.id}`, {
+        method: 'DELETE',
+        prefer: 'return=minimal'
+      });
+      return res.status(200).json({ ok: true, deleted: customer });
+    }
+
     const row = payloadToRow(payload);
 
     if (!row.full_name || !row.ci || !row.plan_name) {

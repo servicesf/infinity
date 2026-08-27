@@ -339,6 +339,7 @@ function renderDetail() {
       ${status === 'cortado'
         ? '<button class="btn primary" type="button" data-detail-action="enable"><i class="fas fa-wifi"></i> Activar</button>'
         : '<button class="btn ghost" type="button" data-detail-action="cut"><i class="fas fa-ban"></i> Cortar</button>'}
+      <button class="btn danger" type="button" data-detail-action="delete"><i class="fas fa-trash"></i> Eliminar</button>
     </div>
 
     <div class="payment-history">
@@ -419,6 +420,21 @@ async function performAction(action, options = {}) {
   });
   await loadData();
   alert('Accion guardada. La VPS ejecutara el comando MikroTik.');
+}
+
+async function deleteSelectedClient(client) {
+  const routerName = client.router?.name || 'sin router';
+  const access = client.pppoe || client.queue || client.ip || 'sin acceso configurado';
+  const confirmation = `Eliminar definitivamente a ${client.nombre}?\n\nRouter: ${routerName}\nAcceso: ${access}\n\nTambien se eliminaran sus pagos y acciones guardadas. Esta accion no se puede deshacer.`;
+  if (!confirm(confirmation)) return;
+
+  await api('/api/admin-client', {
+    method: 'DELETE',
+    body: JSON.stringify({ id: client.id })
+  });
+  state.selectedId = null;
+  await loadData();
+  alert('Cliente eliminado del panel.');
 }
 
 function openClientDialog(client = null) {
@@ -599,6 +615,7 @@ els.detail.addEventListener('click', event => {
 
   if (action === 'edit') return openClientDialog(client);
   if (action === 'schedule-cut') return openScheduleDialog(client);
+  if (action === 'delete') return deleteSelectedClient(client).catch(error => alert(error.message));
   return performAction(action).catch(error => alert(error.message));
 });
 

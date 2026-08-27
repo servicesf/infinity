@@ -700,6 +700,18 @@
   margin-bottom: 14px;
 }
 
+.detail-actions .btn.danger {
+  border-color: #f1b8b4;
+  color: #b42318;
+  background: #fff4f2;
+}
+
+.detail-actions .btn.danger:hover {
+  border-color: #b42318;
+  color: #fff;
+  background: #b42318;
+}
+
 .command-box {
   padding: 12px;
   border-radius: var(--radius);
