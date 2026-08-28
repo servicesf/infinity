@@ -929,7 +929,7 @@ button.stat-card:focus-visible {
 }
 
 .detail-actions .btn.danger {
-  grid-column: 1 / -1;
+  grid-column: auto;
   border-color: #f1b8b4;
   color: #b42318;
   background: #fff4f2;
@@ -990,6 +990,7 @@ button.stat-card:focus-visible {
 
 .client-dialog {
   width: min(720px, calc(100% - 28px));
+  margin: auto;
   border: 0;
   border-radius: var(--radius);
   box-shadow: 0 22px 80px rgba(18, 48, 71, 0.26);
@@ -998,6 +999,28 @@ button.stat-card:focus-visible {
 
 .schedule-dialog {
   width: min(480px, calc(100% - 28px));
+}
+
+.ci-dialog {
+  width: min(480px, calc(100% - 28px));
+}
+
+.ci-safe-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #b8e2c4;
+  border-radius: 14px;
+  color: #1f6f38;
+  background: #eefaf1;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ci-safe-note i {
+  margin-top: 2px;
+  color: #209447;
 }
 
 .dialog-note {

@@ -33,6 +33,8 @@ const els = {
   },
   dialog: document.getElementById('clientDialog'),
   form: document.getElementById('clientForm'),
+  ciDialog: document.getElementById('ciDialog'),
+  ciForm: document.getElementById('ciForm'),
   scheduleDialog: document.getElementById('scheduleDialog'),
   scheduleForm: document.getElementById('scheduleForm')
 };
@@ -326,6 +328,7 @@ function renderDetail() {
     <div class="detail-actions">
       <button class="btn primary" type="button" data-detail-action="recharge"><i class="fas fa-money-bill-wave"></i> Recargar 30d</button>
       <button class="btn ghost" type="button" data-detail-action="schedule-cut"><i class="fas fa-calendar-check"></i> Programar corte</button>
+      <button class="btn ghost" type="button" data-detail-action="update-ci"><i class="fas fa-id-card"></i> Asignar carnet</button>
       <button class="btn danger" type="button" data-detail-action="delete"><i class="fas fa-trash"></i> Eliminar</button>
     </div>
 
@@ -450,6 +453,14 @@ function openClientDialog(client = null) {
   els.dialog.showModal();
 }
 
+function openCiDialog(client) {
+  document.getElementById('ciClientId').value = client.id;
+  document.getElementById('ciClientName').textContent = client.nombre;
+  document.getElementById('ciValue').value = isSyntheticCi(client.ci) ? '' : (client.ci || '');
+  els.ciDialog.showModal();
+  document.getElementById('ciValue').focus();
+}
+
 function openScheduleDialog(client) {
   document.getElementById('scheduleClientId').value = client.id;
   document.getElementById('scheduleClientName').textContent = `${client.nombre} · ${client.pppoe || client.queue || '-'}`;
@@ -538,6 +549,8 @@ document.getElementById('exportBtn').addEventListener('click', () => {
 });
 document.getElementById('closeDialogBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('cancelClientBtn').addEventListener('click', () => els.dialog.close());
+document.getElementById('closeCiBtn').addEventListener('click', () => els.ciDialog.close());
+document.getElementById('cancelCiBtn').addEventListener('click', () => els.ciDialog.close());
 document.getElementById('closeScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
 document.getElementById('cancelScheduleBtn').addEventListener('click', () => els.scheduleDialog.close());
 document.getElementById('cutNowBtn').addEventListener('click', async () => {
@@ -556,6 +569,23 @@ document.getElementById('clientPlan').addEventListener('input', event => {
 
 els.form.addEventListener('submit', event => {
   handleClientSubmit(event).catch(error => alert(error.message));
+});
+
+els.ciForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  try {
+    await api('/api/admin-client-ci', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        id: document.getElementById('ciClientId').value,
+        ci: document.getElementById('ciValue').value.trim()
+      })
+    });
+    els.ciDialog.close();
+    await loadData();
+  } catch (error) {
+    alert(error.message);
+  }
 });
 
 els.scheduleForm.addEventListener('submit', async event => {
@@ -643,6 +673,7 @@ els.detail.addEventListener('click', event => {
   const client = state.clients.find(item => item.id === state.selectedId);
   if (!client) return;
 
+  if (action === 'update-ci') return openCiDialog(client);
   if (action === 'schedule-cut') return openScheduleDialog(client);
   if (action === 'delete') return deleteSelectedClient(client).catch(error => alert(error.message));
   return performAction(action).catch(error => alert(error.message));

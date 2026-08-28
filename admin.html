@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel | Infinit Flores</title>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=9"/>
+  <link rel="stylesheet" href="admin.css?v=10"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -236,6 +236,32 @@
     </form>
   </dialog>
 
+  <dialog class="client-dialog ci-dialog" id="ciDialog">
+    <form method="dialog" class="client-form" id="ciForm">
+      <div class="dialog-head">
+        <div>
+          <h3>Asignar carnet</h3>
+          <p id="ciClientName">Cliente seleccionado</p>
+        </div>
+        <button type="button" id="closeCiBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="ci-safe-note">
+        <i class="fas fa-shield-halved"></i>
+        <span>Solo cambia el acceso a Postpago. No modifica MikroTik, PPPoE, contraseña ni conexión.</span>
+      </div>
+      <input type="hidden" id="ciClientId"/>
+      <div class="form-row">
+        <label for="ciValue">Carnet de identidad</label>
+        <input id="ciValue" type="text" minlength="3" maxlength="30" autocomplete="off" required/>
+        <small>El cliente usará este dato para consultar su servicio en la página pública.</small>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="cancelCiBtn">Cancelar</button>
+        <button class="btn primary" type="submit"><i class="fas fa-id-card"></i> Guardar carnet</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="client-dialog schedule-dialog" id="scheduleDialog">
     <form method="dialog" class="client-form" id="scheduleForm">
       <div class="dialog-head">
@@ -261,6 +287,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=9"></script>
+  <script src="admin.js?v=10"></script>
 </body>
 </html>
