@@ -574,9 +574,10 @@ els.form.addEventListener('submit', event => {
 els.ciForm.addEventListener('submit', async event => {
   event.preventDefault();
   try {
-    await api('/api/admin-client-ci', {
+    await api('/api/admin-client', {
       method: 'PATCH',
       body: JSON.stringify({
+        action: 'update-ci',
         id: document.getElementById('ciClientId').value,
         ci: document.getElementById('ciValue').value.trim()
       })
