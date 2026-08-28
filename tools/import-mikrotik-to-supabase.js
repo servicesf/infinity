@@ -47,6 +47,8 @@ if (!config.importSource) {
 }
 
 const dryRun = process.argv.includes('--dry-run');
+const missingOnly = process.argv.includes('--missing-only');
+const syncPlansOnly = process.argv.includes('--sync-plans-only');
 const onlyArg = process.argv.find(argument => argument.startsWith('--only='));
 const onlyIdentity = onlyArg ? onlyArg.slice('--only='.length).trim().toLowerCase() : '';
 
@@ -350,6 +352,68 @@ async function findCustomerByCi(ci) {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+async function findRouterByCode() {
+  const rows = await supabase(
+    `routers?select=*&code=eq.${encodeURIComponent(config.routerCode)}&limit=1`
+  );
+  return Array.isArray(rows) && rows.length ? rows[0] : null;
+}
+
+async function existingIdentities(routerId, field) {
+  if (!routerId) return new Set();
+  const rows = await supabase(
+    `customers?select=${field}&router_id=eq.${encodeURIComponent(routerId)}&limit=5000`
+  );
+  return new Set((rows || [])
+    .map(row => String(row[field] || '').trim().toLowerCase())
+    .filter(Boolean));
+}
+
+async function filterMissingItems(router, items) {
+  const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
+  const known = await existingIdentities(router?.id, identityField);
+  return items.filter(item => !known.has(String(item.name || '').trim().toLowerCase()));
+}
+
+async function syncCustomerPlans(router, items) {
+  const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
+  const rows = await supabase(
+    `customers?select=id,plan_name,monthly_price,${identityField}&router_id=eq.${encodeURIComponent(router.id)}&limit=5000`
+  );
+  const customersByIdentity = new Map((rows || []).map(row => [
+    String(row[identityField] || '').trim().toLowerCase(),
+    row
+  ]));
+  let changed = 0;
+  let missing = 0;
+
+  for (const item of items) {
+    const identity = String(item.name || '').trim().toLowerCase();
+    const customer = customersByIdentity.get(identity);
+    if (!customer) {
+      missing += 1;
+      continue;
+    }
+    const plan = config.importSource === 'queues'
+      ? queuePlanInfo(item['max-limit'])
+      : planInfo(item.profile);
+    if (customer.plan_name === plan.name && Number(customer.monthly_price || 0) === plan.price) continue;
+    changed += 1;
+    if (dryRun) continue;
+    await supabase(`customers?id=eq.${encodeURIComponent(customer.id)}`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: JSON.stringify({
+        plan_name: plan.name,
+        monthly_price: plan.price,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }
+
+  return { changed, missing };
+}
+
 async function availableCi(router, identity, candidate, existing) {
   if (existing && existing.ci) {
     const legacyPasswordCi = config.routerKind !== 'fibra'
@@ -542,15 +606,35 @@ async function main() {
 
   console.log(`Encontrados: ${items.length} ${config.importSource === 'queues' ? 'queues' : 'PPPoE'} | activos: ${enabled} | cortados: ${disabled} | sin CI/IP: ${withoutCi}`);
 
+  if (syncPlansOnly) {
+    const router = await findRouterByCode();
+    if (!router) throw new Error(`No existe el router ${config.routerCode} en Supabase.`);
+    const result = await syncCustomerPlans(router, items);
+    console.log(`${dryRun ? 'Cambios de plan pendientes' : 'Planes actualizados'}: ${result.changed} | cuentas aun no registradas: ${result.missing}`);
+    if (dryRun) console.log('Modo prueba: no se escribio nada en Supabase.');
+    return;
+  }
+
   if (dryRun) {
+    if (missingOnly) {
+      const router = await findRouterByCode();
+      const missingItems = await filterMissingItems(router, items);
+      const missingEnabled = missingItems.filter(item => !isRouterItemDisabled(item)
+        && !(config.importSource === 'queues' && isQueueCut(item))).length;
+      console.log(`Faltantes en Supabase: ${missingItems.length} | activos: ${missingEnabled} | cortados: ${missingItems.length - missingEnabled}`);
+    }
     console.log('Modo prueba: no se escribio nada en Supabase.');
     return;
   }
 
   const router = await upsertRouter();
+  const importItems = missingOnly ? await filterMissingItems(router, items) : items;
+  if (missingOnly) {
+    console.log(`Modo solo faltantes: se guardaran ${importItems.length} cuentas nuevas; los clientes existentes no se modificaran.`);
+  }
   const result = config.importSource === 'queues'
-    ? await upsertQueueCustomers(router, items)
-    : await upsertCustomers(router, items);
+    ? await upsertQueueCustomers(router, importItems)
+    : await upsertCustomers(router, importItems);
   console.log(`Importacion lista: ${result.imported} clientes guardados, ${result.skipped} omitidos.`);
 }
 

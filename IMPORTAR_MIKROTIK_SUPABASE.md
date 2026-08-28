@@ -114,6 +114,13 @@ Para revisar solamente un usuario de prueba:
 node tools/import-mikrotik-to-supabase.js --dry-run --only=prueba
 ```
 
+Para contar las cuentas que existen en el MikroTik pero todavia no aparecen en
+Supabase, sin modificar ningun registro:
+
+```bash
+node tools/import-mikrotik-to-supabase.js --dry-run --missing-only
+```
+
 ## Importar
 
 Cuando el resultado de prueba sea correcto:
@@ -126,6 +133,27 @@ Para importar solamente el usuario de prueba:
 
 ```bash
 node tools/import-mikrotik-to-supabase.js --only=prueba
+```
+
+Para agregar unicamente las cuentas faltantes y conservar sin cambios los
+clientes, fechas y estados existentes:
+
+```bash
+node tools/import-mikrotik-to-supabase.js --missing-only
+```
+
+Para comparar los planes guardados con los perfiles actuales del MikroTik sin
+cambiar pagos, vencimientos, estados ni sesiones:
+
+```bash
+node tools/import-mikrotik-to-supabase.js --dry-run --sync-plans-only
+```
+
+Despues de revisar el resultado, sincroniza solamente el nombre del plan y su
+mensualidad:
+
+```bash
+node tools/import-mikrotik-to-supabase.js --sync-plans-only
 ```
 
 El importador identifica cada registro por:

@@ -303,8 +303,11 @@ function replaceRadiusUserBlock(content, username, block) {
   const cleaned = content
     .replace(managedBlock, '')
     .replace(legacyStanza, '')
+    .replace(/^\s+/, '')
     .replace(/\s+$/, '');
-  return `${cleaned}\n\n${block}\n`;
+  // FreeRADIUS procesa "files" en orden. Las cuentas concretas deben ir
+  // antes de los bloques DEFAULT para que estos no detengan la búsqueda.
+  return `${block}\n\n${cleaned}\n`;
 }
 
 function reloadRadius() {
