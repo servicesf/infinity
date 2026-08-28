@@ -399,9 +399,15 @@ function customerMessage(customer) {
   return `Tu servicio esta activo. Te quedan ${remaining}. Gracias por estar conectado con Infinit.`;
 }
 
+function setCustomerPortalLoaded(loaded) {
+  document.getElementById('page-cliente')?.classList.toggle('customer-loaded', loaded);
+}
+
 function renderCustomer(customer) {
   const target = document.getElementById('customerResult');
   if (!target) return;
+
+  setCustomerPortalLoaded(Boolean(customer));
 
   if (!customer) {
     target.innerHTML = `
@@ -474,6 +480,7 @@ function renderCustomer(customer) {
       </section>
     </div>
   `;
+  window.scrollTo({ top: 0, behavior: 'auto' });
 }
 
 document.getElementById('clientLookupForm')?.addEventListener('submit', event => {
@@ -486,6 +493,7 @@ async function lookupCustomer(ci) {
   const target = document.getElementById('customerResult');
   if (!target) return;
 
+  setCustomerPortalLoaded(false);
   target.innerHTML = `
     <div class="empty-state">
       <i class="fas fa-spinner fa-spin"></i>
@@ -506,6 +514,7 @@ async function lookupCustomer(ci) {
 
     renderCustomer(data.customer);
   } catch (error) {
+    setCustomerPortalLoaded(false);
     target.innerHTML = `
       <div class="empty-state danger">
         <i class="fas fa-circle-exclamation"></i>

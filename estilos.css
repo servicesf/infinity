@@ -1853,6 +1853,20 @@ body.modal-open {
   padding: 18px;
 }
 
+#page-cliente.customer-loaded > #clientPortalHero,
+#page-cliente.customer-loaded .lookup-card {
+  display: none;
+}
+
+#page-cliente.customer-loaded .client-portal {
+  grid-template-columns: minmax(0, 920px);
+  justify-content: center;
+}
+
+#page-cliente.customer-loaded .customer-result {
+  min-height: 0;
+}
+
 .empty-state {
   min-height: 290px;
   display: grid;
