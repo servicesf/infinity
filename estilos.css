@@ -1917,6 +1917,7 @@ body.modal-open {
 
 .receipt-head h2 {
   font-size: 1.6rem;
+  text-transform: uppercase;
 }
 
 .status-chip {
