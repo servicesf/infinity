@@ -87,13 +87,15 @@ function formatMoney(value) {
   return `Bs. ${Number(value || 0).toFixed(0)}`;
 }
 
-function isSyntheticCi(value) {
-  return String(value || '').trim().toUpperCase().startsWith('SIN-CI-');
+function isPlaceholderCi(value) {
+  const ci = String(value || '').trim();
+  return ci.toUpperCase().startsWith('SIN-CI-')
+    || /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ci);
 }
 
 function formatCi(value) {
   const ci = String(value || '').trim();
-  return !ci || isSyntheticCi(ci) ? 'sin CI' : `CI ${ci}`;
+  return !ci || isPlaceholderCi(ci) ? 'sin CI' : `CI ${ci}`;
 }
 
 function formatDateTime(value) {
@@ -427,9 +429,9 @@ function openClientDialog(client = null) {
   document.getElementById('dialogTitle').textContent = client ? 'Editar cliente' : 'Nuevo cliente';
   document.getElementById('clientId').value = client?.id || '';
   document.getElementById('clientName').value = client?.nombre || '';
-  ciInput.value = isSyntheticCi(client?.ci) ? '' : (client?.ci || '');
-  ciInput.required = !client || !isSyntheticCi(client?.ci);
-  ciInput.placeholder = isSyntheticCi(client?.ci) ? 'Sin CI registrado' : '';
+  ciInput.value = isPlaceholderCi(client?.ci) ? '' : (client?.ci || '');
+  ciInput.required = !client || !isPlaceholderCi(client?.ci);
+  ciInput.placeholder = isPlaceholderCi(client?.ci) ? 'Sin CI registrado' : '';
   document.getElementById('clientPhone').value = client?.telefono || '';
   document.getElementById('clientSector').value = client?.sector || 'fibra';
   document.getElementById('clientPlan').value = client?.plan || 'Fibra 50 Mbps';
@@ -456,7 +458,7 @@ function openClientDialog(client = null) {
 function openCiDialog(client) {
   document.getElementById('ciClientId').value = client.id;
   document.getElementById('ciClientName').textContent = client.nombre;
-  document.getElementById('ciValue').value = isSyntheticCi(client.ci) ? '' : (client.ci || '');
+  document.getElementById('ciValue').value = isPlaceholderCi(client.ci) ? '' : (client.ci || '');
   els.ciDialog.showModal();
   document.getElementById('ciValue').focus();
 }
@@ -482,7 +484,7 @@ async function handleClientSubmit(event) {
   const payload = {
     id,
     nombre: document.getElementById('clientName').value.trim(),
-    ci: enteredCi || (id && isSyntheticCi(existingClient?.ci) ? existingClient.ci : ''),
+    ci: enteredCi || (id && isPlaceholderCi(existingClient?.ci) ? existingClient.ci : ''),
     telefono: document.getElementById('clientPhone').value.trim(),
     sector: document.getElementById('clientSector').value,
     plan: document.getElementById('clientPlan').value,

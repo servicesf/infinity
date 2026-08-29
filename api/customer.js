@@ -36,6 +36,10 @@ export default async function handler(req, res) {
   const ci = String(req.query.ci || '').trim();
   const phone = String(req.query.phone || '').trim();
 
+  if (ci && (/^SIN-CI-/i.test(ci) || /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ci))) {
+    return res.status(400).json({ error: 'Ingresa el carnet real registrado en tu servicio.' });
+  }
+
   if (!ci && !phone) {
     return res.status(400).json({ error: 'Ingresa carnet o telefono.' });
   }

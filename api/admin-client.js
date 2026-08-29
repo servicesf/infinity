@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       if (ci.length < 3 || ci.length > 30) {
         return res.status(400).json({ ok: false, error: 'El carnet debe tener entre 3 y 30 caracteres.' });
       }
-      if (/^SIN-CI-/i.test(ci)) {
+      if (/^SIN-CI-/i.test(ci) || /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ci)) {
         return res.status(400).json({ ok: false, error: 'Ingresa el carnet real del cliente.' });
       }
 
