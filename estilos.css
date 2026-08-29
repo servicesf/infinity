@@ -2134,12 +2134,37 @@ body.modal-open {
   line-height: 1.35;
 }
 
+.qr-payment-visual {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  margin: 0;
+}
+
+.qr-payment-visual > a:first-child {
+  display: block;
+  width: min(360px, 100%);
+}
+
 .manual-payment-detail img {
-  width: min(260px, 100%);
+  display: block;
+  width: 100%;
   justify-self: center;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #fff;
+}
+
+.qr-payment-visual figcaption {
+  color: #385469;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.qr-download {
+  min-height: 40px;
+  padding: 0 16px;
 }
 
 .customer-reference {

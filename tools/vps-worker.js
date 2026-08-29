@@ -42,6 +42,7 @@ const config = {
   syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
   rechargeDays: Number(process.env.WORKER_RECHARGE_DAYS || 30),
   rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 3),
+  queueCutLimit: String(process.env.WORKER_QUEUE_CUT_LIMIT || '10k/10k').trim(),
   radiusManagedAccounts: new Set(
     String(process.env.RADIUS_MANAGED_ACCOUNTS || '')
       .split(',')
@@ -217,7 +218,10 @@ function normalizeRateLimit(value = '') {
 
 function isQueueCut(queue) {
   const maxLimit = normalizeRateLimit(queue?.['max-limit']);
-  return maxLimit === '64k/64k' || maxLimit === '65536/65536';
+  return maxLimit === '10k/10k'
+    || maxLimit === '10000/10000'
+    || maxLimit === '64k/64k'
+    || maxLimit === '65536/65536';
 }
 
 function isRouterItemDisabled(item) {
@@ -388,12 +392,13 @@ async function findQueueItems(api, name) {
 
 async function cutQueueBySpeed(api, queueItems) {
   for (const queueItem of queueItems) {
-    const comment = appendLimitMarker(queueItem.comment, queueItem['max-limit']);
+    const originalLimit = extractLimitMarker(queueItem.comment) || queueItem['max-limit'];
+    const comment = appendLimitMarker(queueItem.comment, originalLimit);
     await api.talk([
       '/queue/simple/set',
       `=.id=${queueItem['.id']}`,
       '=disabled=false',
-      '=max-limit=64k/64k',
+      `=max-limit=${config.queueCutLimit}`,
       `=comment=${comment}`
     ]);
   }
@@ -670,7 +675,7 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
-  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
+  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} QUEUE_CUT_LIMIT=${config.queueCutLimit} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
   await tick();
   setInterval(() => tick().catch(error => console.error(error.message)), config.intervalMs);
 }

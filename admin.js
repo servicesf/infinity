@@ -13,10 +13,11 @@ const planPrices = {
   'Fibra 20 Mbps': 120,
   'Fibra 25 Mbps': 120,
   'Fibra 40 Mbps': 150,
-  'Fibra 50 Mbps': 150,
+  'Fibra 50 Mbps': 149,
   'Fibra 50 Mbps + TV': 160,
   'Fibra 100 Mbps': 200,
-  'Fibra 200 Mbps': 300
+  'Fibra 200 Mbps': 300,
+  'Inalambrico 50 Mbps': 149
 };
 
 const els = {

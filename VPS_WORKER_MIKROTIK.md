@@ -20,6 +20,7 @@ WORKER_SYNC_WINBOX_RECHARGES=false
 WORKER_SYNC_WINBOX_CUTS=false
 WORKER_RECHARGE_DAYS=30
 WORKER_RECHARGE_HOURS=3
+WORKER_QUEUE_CUT_LIMIT=10k/10k
 ```
 
 El usuario `api_wisp` debe tener permiso `read,write,api`, porque este worker si ejecutara cortes y activaciones cuando lo activemos.
@@ -52,12 +53,15 @@ Cuando confirmes que corta solo `prueba`, quitas `WORKER_ONLY_PPPOE` para produc
 2. Esa fecha se guarda en `customers.paid_until`.
 3. El worker revisa clientes vencidos con `auto_cut_enabled=true`.
 4. Cuando llega la fecha, ejecuta en MikroTik:
-   - deshabilita `/ppp secret`
-   - elimina `/ppp active`
-   - deshabilita `/queue simple` si existe
+   - en PPPoE deshabilita el secreto y elimina la sesion activa
+   - en Simple Queues guarda la velocidad original y reduce el cliente a `10k/10k`
 5. Marca el cliente como `cortado` en Supabase.
 
 Los clientes sin fecha no se cortan.
+
+Cuando recargas un cliente de Simple Queues, el worker restaura exactamente el
+limite que guardo antes del corte, por ejemplo `15M/50M`. Tambien reconoce el
+limite anterior `64k/64k` para recuperar cortes hechos con versiones previas.
 
 ## Recargas hechas desde WinBox
 

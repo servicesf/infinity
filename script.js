@@ -318,8 +318,11 @@ const demoCustomers = [
 ];
 
 const CASH_PAYMENT_ADDRESS = 'Final avenida Vernal, una cuadra antes de llegar a FATECIPOL.';
+const STATIC_PAYMENT_QR = 'imagenes/QROFICIAL.jpeg';
 
-function manualPaymentDetail(method) {
+function manualPaymentDetail(method, amount = 0) {
+  const paymentAmount = Number(amount || 0);
+  const qrMatchesAmount = paymentAmount === 149;
   const details = {
     'Tigo Money': {
       icon: 'fa-mobile-screen',
@@ -333,9 +336,11 @@ function manualPaymentDetail(method) {
     },
     'QR bancario estatico': {
       icon: 'fa-qrcode',
-      title: 'QR bancario estatico',
-      text: 'Escanea el QR, realiza el pago y guarda la captura del comprobante.',
-      image: 'imagenes/WhatsApp Image 2026-02-21 at 22.44.17.jpeg'
+      title: qrMatchesAmount ? 'QR Banco Union · Bs. 149' : 'QR bancario de Bs. 149',
+      text: qrMatchesAmount
+        ? 'Valido para pagar tu plan de Internet fibra o inalambrico. Guarda el comprobante.'
+        : `Este QR cobra Bs. 149 y tu mensualidad es Bs. ${paymentAmount || 0}. Elige otro metodo o consulta por WhatsApp.`,
+      image: qrMatchesAmount ? STATIC_PAYMENT_QR : ''
     },
     'Pago en efectivo': {
       icon: 'fa-money-bill-wave',
@@ -346,15 +351,23 @@ function manualPaymentDetail(method) {
   return details[method] || details['Tigo Money'];
 }
 
-function renderManualPaymentDetail(method) {
-  const detail = manualPaymentDetail(method);
+function renderManualPaymentDetail(method, amount = 0) {
+  const detail = manualPaymentDetail(method, amount);
   return `
     <div class="manual-payment-detail">
       <div class="manual-payment-detail-head">
         <i class="fas ${detail.icon}" aria-hidden="true"></i>
         <div><strong>${detail.title}</strong><span>${detail.text}</span></div>
       </div>
-      ${detail.image ? `<img src="${detail.image}" alt="QR bancario estatico para pagar el servicio Infinit"/>` : ''}
+      ${detail.image ? `
+        <figure class="qr-payment-visual">
+          <a href="${detail.image}" target="_blank" rel="noopener" aria-label="Abrir QR bancario en tamano completo">
+            <img src="${detail.image}" alt="QR Banco Union de Bs. 149 para pagar el servicio Infinit" loading="lazy" decoding="async"/>
+          </a>
+          <figcaption>Monto fijo: Bs. 149 · Fibra e inalambrico</figcaption>
+          <a class="btn light qr-download" href="${detail.image}" download="QR-Infinit-Bs149.jpeg"><i class="fas fa-download"></i> Guardar QR</a>
+        </figure>
+      ` : ''}
     </div>
   `;
 }
@@ -422,11 +435,16 @@ function renderCustomer(customer) {
 
   const payments = customer.ultimosPagos || [];
   const estado = escapeHtml(customer.estado || '');
+  const qrEligible = Number(customer.precio || 0) === 149;
+  const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Tigo Money';
+  const serviceLabel = customer.sector === 'inalambrico'
+    ? 'Mi servicio de Internet inalambrico'
+    : 'Mi servicio de fibra';
   target.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-head">
         <div>
-          <span>Mi servicio de fibra</span>
+          <span>${serviceLabel}</span>
           <h2>${escapeHtml(customer.nombre)}</h2>
         </div>
         <strong class="status-chip ${estado}">${estado}</strong>
@@ -463,12 +481,12 @@ function renderCustomer(customer) {
           <input type="hidden" name="customerAmount" value="${escapeHtml(customer.precio)}"/>
           <fieldset class="customer-payment-methods">
             <legend>Metodo de pago</legend>
-            <label><input type="radio" name="manualMethod" value="Tigo Money" checked/><span><i class="fas fa-mobile-screen"></i>Tigo Money</span></label>
+            <label><input type="radio" name="manualMethod" value="Tigo Money" ${qrEligible ? '' : 'checked'}/><span><i class="fas fa-mobile-screen"></i>Tigo Money</span></label>
             <label><input type="radio" name="manualMethod" value="Transferencia bancaria"/><span><i class="fas fa-building-columns"></i>Transferencia</span></label>
-            <label><input type="radio" name="manualMethod" value="QR bancario estatico"/><span><i class="fas fa-qrcode"></i>QR bancario</span></label>
+            <label><input type="radio" name="manualMethod" value="QR bancario estatico" ${qrEligible ? 'checked' : ''}/><span><i class="fas fa-qrcode"></i>QR bancario</span></label>
             <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
           </fieldset>
-          <div data-manual-payment-detail>${renderManualPaymentDetail('Tigo Money')}</div>
+          <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
           <label class="customer-reference">
             <span>Referencia o numero de transaccion</span>
             <input name="paymentReference" type="text" maxlength="100" placeholder="Ejemplo: 458721 o Pago en efectivo" required/>
@@ -530,7 +548,8 @@ document.addEventListener('change', event => {
   if (!method) return;
   const form = method.closest('[data-customer-payment-form]');
   const target = form?.querySelector('[data-manual-payment-detail]');
-  if (target) target.innerHTML = renderManualPaymentDetail(method.value);
+  const amount = form?.querySelector('input[name="customerAmount"]')?.value || 0;
+  if (target) target.innerHTML = renderManualPaymentDetail(method.value, amount);
 });
 
 document.addEventListener('submit', event => {

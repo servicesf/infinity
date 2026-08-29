@@ -199,7 +199,7 @@ function planInfo(profile = '') {
     20: 120,
     25: 120,
     40: 150,
-    50: 150,
+    50: 149,
     100: 200,
     150: 250,
     200: 300
@@ -232,7 +232,7 @@ function queuePlanInfo(maxLimit = '') {
     10: 95,
     25: 120,
     40: 150,
-    50: 150,
+    50: 149,
     100: 200,
     200: 300
   };
@@ -469,7 +469,10 @@ function normalizeRateLimit(value = '') {
 
 function isQueueCut(queue) {
   const maxLimit = normalizeRateLimit(queue?.['max-limit']);
-  return maxLimit === '64k/64k' || maxLimit === '65536/65536';
+  return maxLimit === '10k/10k'
+    || maxLimit === '10000/10000'
+    || maxLimit === '64k/64k'
+    || maxLimit === '65536/65536';
 }
 
 function isRouterItemDisabled(item) {
