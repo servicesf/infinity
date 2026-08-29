@@ -401,6 +401,15 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function formatPersonName(value) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ');
+  if (!name) return 'Sin nombre';
+  return name.split(' ').map(word => word.split('-').map(part => {
+    if (!part) return '';
+    return `${part.charAt(0).toLocaleUpperCase('es')}${part.slice(1).toLocaleLowerCase('es')}`;
+  }).join('-')).join(' ');
+}
+
 function customerMessage(customer) {
   const remaining = remainingServiceTime(customer.pagadoHasta);
   if (remaining === 'Vencido') {
@@ -445,7 +454,7 @@ function renderCustomer(customer) {
       <div class="receipt-head">
         <div>
           <span>${serviceLabel}</span>
-          <h2>${escapeHtml(customer.nombre)}</h2>
+          <h2>${escapeHtml(formatPersonName(customer.nombre))}</h2>
         </div>
         <strong class="status-chip ${estado}">${estado}</strong>
       </div>
@@ -475,7 +484,7 @@ function renderCustomer(customer) {
         </div>
         <p class="manual-payment-intro">Despues de pagar, envia los datos por WhatsApp y adjunta tu comprobante. La recarga se realiza solo despues de verificar el pago.</p>
         <form class="customer-payment-form" data-customer-payment-form>
-          <input type="hidden" name="customerName" value="${escapeHtml(customer.nombre)}"/>
+          <input type="hidden" name="customerName" value="${escapeHtml(formatPersonName(customer.nombre))}"/>
           <input type="hidden" name="customerCi" value="${escapeHtml(customer.ci)}"/>
           <input type="hidden" name="customerPlan" value="${escapeHtml(customer.plan)}"/>
           <input type="hidden" name="customerAmount" value="${escapeHtml(customer.precio)}"/>

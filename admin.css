@@ -464,9 +464,22 @@ button.stat-card:focus-visible {
 }
 
 .client-card-foot {
-  justify-content: flex-end;
+  justify-content: space-between;
   padding-top: 7px;
   border-top: 1px solid #edf3f7;
+}
+
+.client-card-ci {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.client-card-ci i {
+  flex: 0 0 auto;
+  color: #17647f;
 }
 
 .client-card-head > div,
@@ -811,6 +824,11 @@ button.stat-card:focus-visible {
 
 .detail-head h3 {
   font-size: 1.25rem;
+}
+
+.detail-head p strong {
+  color: #17647f;
+  white-space: nowrap;
 }
 
 .detail-grid {

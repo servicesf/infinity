@@ -32,8 +32,12 @@ export default async function handler(req, res) {
     if (req.method === 'PATCH' && payload.action === 'update-ci') {
       const id = String(payload.id || '').trim();
       const ci = String(payload.ci || '').trim();
+      const nombre = String(payload.nombre || '').trim().replace(/\s+/g, ' ');
 
       if (!id) return res.status(400).json({ ok: false, error: 'Falta el cliente.' });
+      if (nombre && (nombre.length < 3 || nombre.length > 100)) {
+        return res.status(400).json({ ok: false, error: 'El nombre debe tener entre 3 y 100 caracteres.' });
+      }
       if (ci.length < 3 || ci.length > 30) {
         return res.status(400).json({ ok: false, error: 'El carnet debe tener entre 3 y 30 caracteres.' });
       }
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
 
       const rows = await supabaseFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ ci, updated_at: new Date().toISOString() })
+        body: JSON.stringify({ full_name: nombre || current.full_name, ci, updated_at: new Date().toISOString() })
       });
 
       return res.status(200).json({

@@ -99,6 +99,15 @@ function formatCi(value) {
   return !ci || isPlaceholderCi(ci) ? 'sin CI' : `CI ${ci}`;
 }
 
+function formatPersonName(value) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ');
+  if (!name) return 'Sin nombre';
+  return name.split(' ').map(word => word.split('-').map(part => {
+    if (!part) return '';
+    return `${part.charAt(0).toLocaleUpperCase('es')}${part.slice(1).toLocaleLowerCase('es')}`;
+  }).join('-')).join(' ');
+}
+
 function formatDateTime(value) {
   if (!value) return 'Sin fecha';
   const date = new Date(value);
@@ -272,7 +281,7 @@ function renderClients() {
       <article class="client-card ${selected}" data-id="${client.id}">
         <div class="client-card-head">
           <div>
-          <strong>${client.nombre}</strong>
+          <strong>${formatPersonName(client.nombre)}</strong>
           </div>
           <span class="state-pill ${status}">${status}</span>
         </div>
@@ -281,6 +290,7 @@ function renderClients() {
           <strong>${client.plan}</strong>
         </div>
         <div class="client-card-foot">
+          <span class="client-card-ci"><i class="fas fa-id-card"></i>${formatCi(client.ci)}</span>
           <div class="client-due">
           <strong class="${countdown.tone}">${countdown.label}</strong>
           <small>${countdown.dateLabel}</small>
@@ -312,8 +322,8 @@ function renderDetail() {
   els.detail.innerHTML = `
     <div class="detail-head">
       <div>
-        <h3>${client.nombre}</h3>
-        <p>${shortRouterName(client)} · ${client.plan}</p>
+        <h3>${formatPersonName(client.nombre)}</h3>
+        <p>${shortRouterName(client)} · ${client.plan} · <strong>${formatCi(client.ci)}</strong></p>
       </div>
       <span class="state-pill ${status}">${status}</span>
     </div>
@@ -331,7 +341,7 @@ function renderDetail() {
     <div class="detail-actions">
       <button class="btn primary" type="button" data-detail-action="recharge"><i class="fas fa-money-bill-wave"></i> Recargar 30d</button>
       <button class="btn ghost" type="button" data-detail-action="schedule-cut"><i class="fas fa-calendar-check"></i> Programar corte</button>
-      <button class="btn ghost" type="button" data-detail-action="update-ci"><i class="fas fa-id-card"></i> Asignar carnet</button>
+      <button class="btn ghost" type="button" data-detail-action="update-ci"><i class="fas fa-id-card"></i> Nombre y carnet</button>
       <button class="btn danger" type="button" data-detail-action="delete"><i class="fas fa-trash"></i> Eliminar</button>
     </div>
 
@@ -392,10 +402,10 @@ async function performAction(action, options = {}) {
   if (!client) return false;
 
   const labels = {
-    recharge: `Aviso: vas a recargar 30 días + 3 horas a ${client.nombre}. ¿Confirmar?`,
-    'schedule-cut': `Programar corte para ${client.nombre}?`,
-    cut: `Aviso: vas a cortar el servicio de ${client.nombre} ahora. ¿Confirmar?`,
-    enable: `Activar y mandar accion pendiente para ${client.nombre}?`
+    recharge: `Aviso: vas a recargar 30 días + 3 horas a ${formatPersonName(client.nombre)}. ¿Confirmar?`,
+    'schedule-cut': `Programar corte para ${formatPersonName(client.nombre)}?`,
+    cut: `Aviso: vas a cortar el servicio de ${formatPersonName(client.nombre)} ahora. ¿Confirmar?`,
+    enable: `Activar y mandar accion pendiente para ${formatPersonName(client.nombre)}?`
   };
   if (!confirm(labels[action] || 'Confirmar accion?')) return false;
 
@@ -414,7 +424,7 @@ async function performAction(action, options = {}) {
 async function deleteSelectedClient(client) {
   const routerName = client.router?.name || 'sin router';
   const access = client.pppoe || client.queue || client.ip || 'sin acceso configurado';
-  const confirmation = `Eliminar definitivamente a ${client.nombre}?\n\nRouter: ${routerName}\nAcceso: ${access}\n\nTambien se eliminaran sus pagos y acciones guardadas. Esta accion no se puede deshacer.`;
+  const confirmation = `Eliminar definitivamente a ${formatPersonName(client.nombre)}?\n\nRouter: ${routerName}\nAcceso: ${access}\n\nTambien se eliminaran sus pagos y acciones guardadas. Esta accion no se puede deshacer.`;
   if (!confirm(confirmation)) return;
 
   await api('/api/admin-client', {
@@ -458,15 +468,16 @@ function openClientDialog(client = null) {
 
 function openCiDialog(client) {
   document.getElementById('ciClientId').value = client.id;
-  document.getElementById('ciClientName').textContent = client.nombre;
+  document.getElementById('ciClientName').textContent = formatPersonName(client.nombre);
+  document.getElementById('ciNameValue').value = formatPersonName(client.nombre);
   document.getElementById('ciValue').value = isPlaceholderCi(client.ci) ? '' : (client.ci || '');
   els.ciDialog.showModal();
-  document.getElementById('ciValue').focus();
+  document.getElementById('ciNameValue').focus();
 }
 
 function openScheduleDialog(client) {
   document.getElementById('scheduleClientId').value = client.id;
-  document.getElementById('scheduleClientName').textContent = `${client.nombre} · ${client.pppoe || client.queue || '-'}`;
+  document.getElementById('scheduleClientName').textContent = `${formatPersonName(client.nombre)} · ${client.pppoe || client.queue || '-'}`;
   document.getElementById('scheduleDueAt').value = toLocalDateTimeInput(client.dueAt || '');
   document.getElementById('scheduleAutoCut').checked = client.autoCutEnabled !== false;
   els.scheduleDialog.showModal();
@@ -582,6 +593,7 @@ els.ciForm.addEventListener('submit', async event => {
       body: JSON.stringify({
         action: 'update-ci',
         id: document.getElementById('ciClientId').value,
+        nombre: document.getElementById('ciNameValue').value.trim(),
         ci: document.getElementById('ciValue').value.trim()
       })
     });
