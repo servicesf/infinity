@@ -319,6 +319,7 @@ const demoCustomers = [
 
 const CASH_PAYMENT_ADDRESS = 'Final avenida Vernal, una cuadra antes de llegar a FATECIPOL.';
 const STATIC_PAYMENT_QR = 'imagenes/QROFICIAL.jpeg';
+let activeCustomer = null;
 
 function manualPaymentDetail(method, amount = 0) {
   const paymentAmount = Number(amount || 0);
@@ -433,6 +434,105 @@ function setCustomerPortalLoaded(loaded) {
   document.getElementById('page-cliente')?.classList.toggle('customer-loaded', loaded);
 }
 
+function receiptStatusLabel(receipt) {
+  if (receipt.status === 'confirmado') return 'Confirmado';
+  if (receipt.status === 'rechazado') return 'Rechazado';
+  if (receipt.analysisStatus === 'procesando') return 'Analizando';
+  return receipt.eligible ? 'Listo para revisar' : 'Revisión necesaria';
+}
+
+function renderReceiptChecks(receipt) {
+  const labels = {
+    receipt: 'Comprobante legible',
+    amount: 'Monto correcto',
+    recipient: 'Destinatario correcto',
+    recentDate: 'Fecha reciente',
+    successful: 'Pago exitoso',
+    confidence: 'Lectura confiable'
+  };
+  return Object.entries(labels).map(([key, label]) => {
+    const passed = receipt.checks?.[key] === true;
+    return `<span class="receipt-check ${passed ? 'passed' : 'failed'}"><i class="fas ${passed ? 'fa-check' : 'fa-exclamation'}"></i>${label}</span>`;
+  }).join('');
+}
+
+function renderReportedReceipts(receipts = []) {
+  if (!receipts.length) return '';
+  return `
+    <section class="reported-receipts" aria-labelledby="reportedReceiptsTitle">
+      <h3 id="reportedReceiptsTitle">Comprobantes enviados</h3>
+      ${receipts.map(receipt => `
+        <article class="reported-receipt ${escapeHtml(receipt.status)}">
+          <div>
+            <strong>Bs. ${escapeHtml(receipt.amount)}</strong>
+            <span>${escapeHtml(receiptStatusLabel(receipt))} · ${formatDateTime(receipt.createdAt)}</span>
+          </div>
+          <button class="mini-action" type="button" data-public-receipt-id="${escapeHtml(receipt.id)}"><i class="fas fa-image"></i> Ver foto</button>
+        </article>
+      `).join('')}
+    </section>
+  `;
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('La imagen no es válida.'));
+    image.src = dataUrl;
+  });
+}
+
+async function compressReceiptImage(file) {
+  if (!file || !/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+    throw new Error('Selecciona una foto JPG, PNG o WEBP.');
+  }
+  if (file.size > 12 * 1024 * 1024) throw new Error('La foto original supera 12 MB.');
+  const source = await readFileAsDataUrl(file);
+  const image = await loadImage(source);
+  const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.width * scale));
+  canvas.height = Math.max(1, Math.round(image.height * scale));
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  let quality = 0.88;
+  let result = canvas.toDataURL('image/jpeg', quality);
+  while (result.length > 2.3 * 1024 * 1024 && quality > 0.5) {
+    quality -= 0.08;
+    result = canvas.toDataURL('image/jpeg', quality);
+  }
+  if (result.length > 4 * 1024 * 1024) throw new Error('No se pudo reducir la foto. Toma otra con menor resolución.');
+  return result;
+}
+
+function renderUploadResult(receipt, customerName, customerCi, imageUrl = '') {
+  return `
+    <article class="receipt-upload-result ${receipt.eligible ? 'eligible' : 'review'}">
+      ${imageUrl ? `<img src="${imageUrl}" alt="Vista previa del comprobante enviado"/>` : ''}
+      <div class="receipt-upload-result-copy">
+        <span>${receipt.eligible ? 'Análisis completado' : 'Revisión necesaria'}</span>
+        <h4>${escapeHtml(receiptStatusLabel(receipt))}</h4>
+        <p>${escapeHtml(formatPersonName(customerName))} · CI ${escapeHtml(customerCi)} · Bs. ${escapeHtml(receipt.amount)}</p>
+        <p>${escapeHtml(receipt.bank || 'Banco no identificado')} · ${formatDateTime(receipt.transactionDate || receipt.createdAt)}</p>
+        <div class="receipt-checks">${renderReceiptChecks(receipt)}</div>
+        <strong class="receipt-pending-note"><i class="fas fa-clock"></i> Pendiente de tu confirmación. Todavía no se recargó el servicio.</strong>
+      </div>
+    </article>
+  `;
+}
+
 function renderCustomer(customer) {
   const target = document.getElementById('customerResult');
   if (!target) return;
@@ -440,6 +540,7 @@ function renderCustomer(customer) {
   setCustomerPortalLoaded(Boolean(customer));
 
   if (!customer) {
+    activeCustomer = null;
     target.innerHTML = `
       <div class="empty-state danger">
         <i class="fas fa-circle-exclamation"></i>
@@ -449,6 +550,8 @@ function renderCustomer(customer) {
     `;
     return;
   }
+
+  activeCustomer = customer;
 
   const payments = customer.ultimosPagos || [];
   const hasCutDate = Boolean(customer.pagadoHasta && String(customer.pagadoHasta).trim());
@@ -480,16 +583,18 @@ function renderCustomer(customer) {
           <div><span>${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}</span><strong>Bs. ${escapeHtml(payment.monto)}</strong></div>
         `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
+      ${renderReportedReceipts(customer.comprobantes || [])}
       <section class="manual-payment" aria-labelledby="manualPaymentTitle">
         <div class="manual-payment-heading">
           <div>
             <span>Pago manual</span>
             <h3 id="manualPaymentTitle">Elige como quieres pagar</h3>
           </div>
-          <span class="review-chip"><i class="fas fa-user-check"></i> Revision manual</span>
+          <span class="review-chip"><i class="fas fa-shield-halved"></i> Análisis + confirmación</span>
         </div>
-        <p class="manual-payment-intro">Despues de pagar, envia los datos por WhatsApp y adjunta tu comprobante. La recarga se realiza solo despues de verificar el pago.</p>
+        <p class="manual-payment-intro">Paga y sube aquí la captura completa. El sistema leerá monto, destinatario, fecha y estado; tú recibirás la recarga después de que el administrador confirme.</p>
         <form class="customer-payment-form" data-customer-payment-form>
+          <input type="hidden" name="customerId" value="${escapeHtml(customer.id)}"/>
           <input type="hidden" name="customerName" value="${escapeHtml(formatPersonName(customer.nombre))}"/>
           <input type="hidden" name="customerCi" value="${escapeHtml(customer.ci)}"/>
           <input type="hidden" name="customerPlan" value="${escapeHtml(customer.plan)}"/>
@@ -503,12 +608,18 @@ function renderCustomer(customer) {
           </fieldset>
           <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
           <label class="customer-reference">
-            <span>Referencia o numero de transaccion</span>
-            <input name="paymentReference" type="text" maxlength="100" placeholder="Ejemplo: 458721 o Pago en efectivo" required/>
-            <small>No escribas datos bancarios sensibles. Solo la referencia del pago.</small>
+            <span>Referencia (opcional)</span>
+            <input name="paymentReference" type="text" maxlength="100" placeholder="El sistema también intentará leerla"/>
+            <small>No escribas contraseñas ni datos bancarios sensibles.</small>
           </label>
-          <button class="btn whatsapp full" type="submit"><i class="fab fa-whatsapp"></i> Enviar comprobante por WhatsApp</button>
-          <p class="payment-warning"><i class="fas fa-circle-info"></i> WhatsApp se abrira con tus datos. Adjunta alli la foto o captura del comprobante.</p>
+          <label class="receipt-file-picker">
+            <input name="receiptFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required/>
+            <span><i class="fas fa-camera"></i><strong>Tomar foto o elegir comprobante</strong><small>Debe verse completo, nítido y sin recortes.</small></span>
+          </label>
+          <div class="receipt-file-preview" data-receipt-file-preview hidden></div>
+          <button class="btn primary full" type="submit" data-receipt-submit><i class="fas fa-cloud-arrow-up"></i> Enviar para revisión</button>
+          <p class="payment-warning"><i class="fas fa-circle-info"></i> La IA no recarga por sí sola. El administrador confirma el pago y entonces se agregan 30 días + 3 horas.</p>
+          <div data-receipt-upload-result aria-live="polite"></div>
         </form>
       </section>
     </div>
@@ -567,29 +678,86 @@ document.addEventListener('change', event => {
   if (target) target.innerHTML = renderManualPaymentDetail(method.value, amount);
 });
 
-document.addEventListener('submit', event => {
+document.addEventListener('change', event => {
+  const input = event.target.closest('input[name="receiptFile"]');
+  if (!input) return;
+  const preview = input.closest('form')?.querySelector('[data-receipt-file-preview]');
+  const file = input.files?.[0];
+  if (!preview || !file) return;
+  const url = URL.createObjectURL(file);
+  preview.hidden = false;
+  preview.innerHTML = `<img src="${url}" alt="Vista previa del comprobante"/><span>${escapeHtml(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)} MB</span>`;
+  preview.querySelector('img')?.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+});
+
+document.addEventListener('submit', async event => {
   const form = event.target.closest('[data-customer-payment-form]');
   if (!form) return;
   event.preventDefault();
 
   const formData = new FormData(form);
-  const method = String(formData.get('manualMethod') || '');
-  const reference = String(formData.get('paymentReference') || '').trim();
-  const message = [
-    '*COMPROBANTE DE PAGO - INFINIT*',
-    '',
-    `Nombre: ${formData.get('customerName') || ''}`,
-    `Carnet: ${formData.get('customerCi') || ''}`,
-    `Plan: ${formData.get('customerPlan') || ''}`,
-    `Monto: Bs. ${formData.get('customerAmount') || '0'}`,
-    `Metodo: ${method}`,
-    `Referencia: ${reference}`,
-    '',
-    'Adjuntare el comprobante en este chat.',
-    'Solicito la revision manual de mi pago y la recarga del servicio.'
-  ].join('\n');
+  const file = formData.get('receiptFile');
+  const button = form.querySelector('[data-receipt-submit]');
+  const result = form.querySelector('[data-receipt-upload-result]');
+  const originalButton = button?.innerHTML;
+  if (button) {
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analizando comprobante...';
+  }
+  if (result) result.innerHTML = '';
+  try {
+    const receiptDataUrl = await compressReceiptImage(file);
+    const response = await fetch('/api/payment-receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId: formData.get('customerId'),
+        ci: formData.get('customerCi'),
+        method: formData.get('manualMethod'),
+        declaredReference: String(formData.get('paymentReference') || '').trim(),
+        receiptDataUrl
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'No se pudo enviar el comprobante.');
+    if (result) result.innerHTML = renderUploadResult(data.receipt, data.customerName, data.customerCi, receiptDataUrl);
+    form.querySelector('input[name="receiptFile"]').value = '';
+    form.querySelector('input[name="paymentReference"]').value = '';
+    if (activeCustomer) {
+      activeCustomer.comprobantes = [data.receipt, ...(activeCustomer.comprobantes || []).filter(item => item.id !== data.receipt.id)];
+    }
+  } catch (error) {
+    if (result) result.innerHTML = `<div class="receipt-upload-error"><i class="fas fa-circle-exclamation"></i><span>${escapeHtml(error.message)}</span></div>`;
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalButton;
+    }
+  }
+});
 
-  window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+document.addEventListener('click', async event => {
+  const button = event.target.closest('[data-public-receipt-id]');
+  if (!button || !activeCustomer?.ci) return;
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/payment-receipt-view?id=${encodeURIComponent(button.dataset.publicReceiptId)}&ci=${encodeURIComponent(activeCustomer.ci)}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'No se pudo abrir la imagen.');
+    const dialog = document.getElementById('publicReceiptDialog');
+    document.getElementById('publicReceiptImage').src = data.imageUrl;
+    dialog?.showModal();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+document.getElementById('closePublicReceiptBtn')?.addEventListener('click', () => {
+  const dialog = document.getElementById('publicReceiptDialog');
+  dialog?.close();
+  document.getElementById('publicReceiptImage').removeAttribute('src');
 });
 
 const cart = {

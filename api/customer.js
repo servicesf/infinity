@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
+import { publicReceipt } from './_receipt.js';
 
 function normalizeCustomer(row, payments = []) {
   const isCut = row.status === 'cortado';
@@ -14,14 +15,18 @@ function normalizeCustomer(row, payments = []) {
     pagadoHasta: isCut ? '' : row.paid_until,
     autoCorte: row.auto_cut_enabled,
     pppoe: row.pppoe_user,
-    ultimosPagos: payments.map(payment => ({
+    ultimosPagos: payments.filter(payment => payment.status === 'confirmado').slice(0, 3).map(payment => ({
       id: payment.id,
       fecha: payment.paid_at,
       monto: Number(payment.amount || 0),
       metodo: payment.method,
       estado: payment.status,
       referencia: payment.reference
-    }))
+    })),
+    comprobantes: payments
+      .filter(payment => payment.qr_payload?.source === 'customer-receipt')
+      .slice(0, 5)
+      .map(publicReceipt)
   };
 }
 
@@ -63,7 +68,7 @@ export default async function handler(req, res) {
     if (!customer) return res.status(404).json({ error: 'Cliente no encontrado.' });
 
     const payments = await supabaseFetch(
-      `payments?select=*&customer_id=eq.${customer.id}&order=paid_at.desc&limit=3`,
+      `payments?select=*&customer_id=eq.${customer.id}&order=created_at.desc&limit=20`,
       { method: 'GET', prefer: '' }
     );
 

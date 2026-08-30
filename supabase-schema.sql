@@ -50,6 +50,7 @@ create table if not exists payments (
 );
 
 alter table payments add column if not exists qr_payload jsonb not null default '{}';
+alter table payments alter column extra_hours set default 3;
 
 create table if not exists router_actions (
   id uuid primary key default gen_random_uuid(),
@@ -76,6 +77,7 @@ create table if not exists payment_webhook_events (
 );
 
 create index if not exists payment_webhook_events_payment_idx on payment_webhook_events(payment_id, created_at);
+create index if not exists payment_webhook_events_provider_idx on payment_webhook_events(provider, created_at desc);
 
 create table if not exists products (
   id uuid primary key default gen_random_uuid(),

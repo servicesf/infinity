@@ -4,7 +4,9 @@ const state = {
   selectedId: null,
   authenticated: false,
   statusFilter: 'todos',
-  routerFilter: 'todos'
+  routerFilter: 'todos',
+  currentReceiptId: null,
+  installPrompt: null
 };
 
 const planPrices = {
@@ -37,7 +39,11 @@ const els = {
   ciDialog: document.getElementById('ciDialog'),
   ciForm: document.getElementById('ciForm'),
   scheduleDialog: document.getElementById('scheduleDialog'),
-  scheduleForm: document.getElementById('scheduleForm')
+  scheduleForm: document.getElementById('scheduleForm'),
+  receiptInbox: document.getElementById('receiptInbox'),
+  receiptInboxList: document.getElementById('receiptInboxList'),
+  receiptDialog: document.getElementById('receiptDialog'),
+  receiptReviewBody: document.getElementById('receiptReviewBody')
 };
 
 const authEls = {
@@ -86,6 +92,12 @@ async function api(path, options = {}) {
 
 function formatMoney(value) {
   return `Bs. ${Number(value || 0).toFixed(0)}`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[character]));
 }
 
 function isPlaceholderCi(value) {
@@ -271,6 +283,61 @@ function renderIncome() {
     }).join('') || '<div class="income-empty"><strong>Sin pagos</strong><span>No hay datos confirmados en este período.</span></div>';
 }
 
+function receiptCustomer(payment) {
+  return state.clients.find(client => client.id === payment.customer_id) || null;
+}
+
+function receiptCheck(label, value) {
+  const passed = value === true;
+  return `<span class="admin-receipt-check ${passed ? 'passed' : 'failed'}"><i class="fas ${passed ? 'fa-check' : 'fa-exclamation'}"></i>${label}</span>`;
+}
+
+function renderReceiptInbox() {
+  const pending = state.payments
+    .filter(payment => payment.status === 'pendiente' && payment.qr_payload?.source === 'customer-receipt')
+    .sort((a, b) => new Date(b.created_at || b.paid_at) - new Date(a.created_at || a.paid_at));
+  document.getElementById('pendingReceiptCount').textContent = pending.length;
+  els.receiptInbox.classList.toggle('is-empty', pending.length === 0);
+  if (!pending.length) {
+    els.receiptInboxList.innerHTML = `
+      <div class="receipt-inbox-empty">
+        <i class="fas fa-circle-check"></i>
+        <span>No hay comprobantes pendientes.</span>
+      </div>`;
+    return;
+  }
+
+  els.receiptInboxList.innerHTML = pending.map(payment => {
+    const customer = receiptCustomer(payment);
+    const analysis = payment.qr_payload?.analysis || {};
+    const evaluation = payment.qr_payload?.evaluation || {};
+    const checks = evaluation.checks || {};
+    const eligible = evaluation.eligible === true;
+    return `
+      <article class="receipt-inbox-card ${eligible ? 'eligible' : 'review'}" data-receipt-id="${escapeHtml(payment.id)}">
+        <div class="receipt-inbox-card-head">
+          <div>
+            <strong>${escapeHtml(formatPersonName(customer?.nombre || 'Cliente'))}</strong>
+            <span>${escapeHtml(formatCi(customer?.ci))} · ${formatDateTime(payment.created_at || payment.paid_at)}</span>
+          </div>
+          <span class="receipt-ai-state ${eligible ? 'eligible' : 'review'}">${eligible ? 'IA: apto' : 'Revisar'}</span>
+        </div>
+        <div class="receipt-inbox-summary">
+          <strong>${formatMoney(payment.amount)}</strong>
+          <span>${escapeHtml(analysis.bank || 'Banco no identificado')}</span>
+          <span>${escapeHtml(analysis.reference || payment.reference || 'Sin referencia')}</span>
+        </div>
+        <div class="admin-receipt-checks">
+          ${receiptCheck('Monto', checks.amount)}
+          ${receiptCheck('Destino', checks.recipient)}
+          ${receiptCheck('Fecha', checks.recentDate)}
+          ${receiptCheck('Exitoso', checks.successful)}
+        </div>
+        <button class="btn primary full" type="button" data-receipt-action="view"><i class="fas fa-receipt"></i> Revisar comprobante</button>
+      </article>`;
+  }).join('');
+}
+
 function renderClients() {
   const clients = filteredClients();
   els.tbody.innerHTML = clients.map(client => {
@@ -361,8 +428,103 @@ function renderDetail() {
 function renderAll() {
   renderStats();
   renderIncome();
+  renderReceiptInbox();
   renderClients();
   renderDetail();
+}
+
+async function openReceiptDialog(id) {
+  els.receiptReviewBody.innerHTML = '<div class="receipt-loading"><i class="fas fa-spinner fa-spin"></i> Cargando comprobante...</div>';
+  document.getElementById('receiptReviewNote').value = '';
+  state.currentReceiptId = id;
+  els.receiptDialog.showModal();
+  try {
+    const data = await api(`/api/payment-review?id=${encodeURIComponent(id)}`);
+    const payment = data.payment;
+    const customer = data.customer || receiptCustomer(payment);
+    const analysis = payment.qr_payload?.analysis || {};
+    const evaluation = payment.qr_payload?.evaluation || {};
+    const checks = evaluation.checks || {};
+    document.getElementById('receiptDialogSubtitle').textContent = `${formatPersonName(customer?.full_name || customer?.nombre || 'Cliente')} · ${customer?.ci ? `CI ${customer.ci}` : 'sin CI'}`;
+    els.receiptReviewBody.innerHTML = `
+      <img class="receipt-review-image" src="${escapeHtml(data.imageUrl)}" alt="Comprobante enviado por el cliente"/>
+      <div class="receipt-review-data">
+        <div><span>Monto registrado</span><strong>${formatMoney(payment.amount)}</strong></div>
+        <div><span>Banco</span><strong>${escapeHtml(analysis.bank || 'No identificado')}</strong></div>
+        <div><span>Destinatario leído</span><strong>${escapeHtml(analysis.recipient || 'No identificado')}</strong></div>
+        <div><span>Fecha del pago</span><strong>${formatDateTime(analysis.transactionDate)}</strong></div>
+        <div><span>Referencia</span><strong>${escapeHtml(analysis.reference || payment.reference || 'Sin referencia')}</strong></div>
+        <div><span>Estado leído</span><strong>${escapeHtml(analysis.statusText || 'No identificado')}</strong></div>
+      </div>
+      <div class="admin-receipt-checks detailed">
+        ${receiptCheck('Es comprobante', checks.receipt)}
+        ${receiptCheck('Monto correcto', checks.amount)}
+        ${receiptCheck('Destino correcto', checks.recipient)}
+        ${receiptCheck('Fecha reciente', checks.recentDate)}
+        ${receiptCheck('Pago exitoso', checks.successful)}
+        ${receiptCheck('Lectura confiable', checks.confidence)}
+      </div>
+      ${analysis.observations || payment.qr_payload?.analysisError ? `<p class="receipt-observations"><strong>Observaciones:</strong> ${escapeHtml(analysis.observations || payment.qr_payload.analysisError)}</p>` : ''}
+      <p class="receipt-confirm-warning"><i class="fas fa-shield-halved"></i> Confirma solamente después de comparar la foto con tu banca. Al confirmar se recargan 30 días + 3 horas.</p>`;
+  } catch (error) {
+    els.receiptReviewBody.innerHTML = `<div class="receipt-loading error"><i class="fas fa-circle-exclamation"></i>${escapeHtml(error.message)}</div>`;
+  }
+}
+
+async function reviewReceipt(decision) {
+  const id = state.currentReceiptId;
+  if (!id) return;
+  const payment = state.payments.find(item => item.id === id);
+  const customer = receiptCustomer(payment || {});
+  const verb = decision === 'confirm'
+    ? `Confirmar este pago y recargar 30 días + 3 horas a ${formatPersonName(customer?.nombre || 'este cliente')}?`
+    : `Rechazar el comprobante de ${formatPersonName(customer?.nombre || 'este cliente')}? No se recargará el servicio.`;
+  if (!confirm(verb)) return;
+  const buttons = [document.getElementById('confirmReceiptBtn'), document.getElementById('rejectReceiptBtn')];
+  buttons.forEach(button => { button.disabled = true; });
+  try {
+    await api('/api/payment-review', {
+      method: 'POST',
+      body: JSON.stringify({ id, decision, note: document.getElementById('receiptReviewNote').value.trim() })
+    });
+    els.receiptDialog.close();
+    state.currentReceiptId = null;
+    await loadData();
+    alert(decision === 'confirm'
+      ? 'Pago confirmado. Se agregaron 30 días + 3 horas y la acción quedó enviada al worker.'
+      : 'Comprobante rechazado y decisión registrada.');
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(base64), character => character.charCodeAt(0));
+}
+
+async function registerPanelApp() {
+  if (!('serviceWorker' in navigator)) return null;
+  return navigator.serviceWorker.register('/service-worker.js');
+}
+
+async function enablePushNotifications() {
+  if (!('Notification' in window) || !('PushManager' in window)) throw new Error('Este navegador no admite notificaciones push.');
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('No se otorgó permiso para notificaciones.');
+  const registration = await registerPanelApp();
+  const config = await api('/api/push-subscribe');
+  if (!config.enabled || !config.publicKey) throw new Error('Las notificaciones todavía no tienen claves VAPID configuradas en Vercel.');
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(config.publicKey)
+    });
+  }
+  await api('/api/push-subscribe', { method: 'POST', body: JSON.stringify({ subscription }) });
+  return true;
 }
 
 function renderFilteredClients() {
@@ -561,6 +723,25 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   toolsMenu.classList.remove('open');
   exportData();
 });
+document.getElementById('enableNotificationsBtn').addEventListener('click', async () => {
+  toolsMenu.classList.remove('open');
+  try {
+    await enablePushNotifications();
+    alert('Notificaciones activadas en este dispositivo.');
+  } catch (error) {
+    alert(error.message);
+  }
+});
+document.getElementById('installAppBtn').addEventListener('click', async () => {
+  toolsMenu.classList.remove('open');
+  if (!state.installPrompt) {
+    alert('En Android abre el menú del navegador y elige “Instalar aplicación”. En iPhone usa Compartir → Agregar a inicio.');
+    return;
+  }
+  state.installPrompt.prompt();
+  await state.installPrompt.userChoice;
+  state.installPrompt = null;
+});
 document.getElementById('closeDialogBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('cancelClientBtn').addEventListener('click', () => els.dialog.close());
 document.getElementById('closeCiBtn').addEventListener('click', () => els.ciDialog.close());
@@ -673,6 +854,15 @@ document.getElementById('incomeResetBtn').addEventListener('click', () => {
   renderIncome();
 });
 document.getElementById('closeChartBtn').addEventListener('click', () => chartDialog.close());
+document.getElementById('closeReceiptBtn').addEventListener('click', () => els.receiptDialog.close());
+document.getElementById('confirmReceiptBtn').addEventListener('click', () => reviewReceipt('confirm').catch(error => alert(error.message)));
+document.getElementById('rejectReceiptBtn').addEventListener('click', () => reviewReceipt('reject').catch(error => alert(error.message)));
+
+els.receiptInboxList.addEventListener('click', event => {
+  const button = event.target.closest('[data-receipt-action="view"]');
+  const card = event.target.closest('[data-receipt-id]');
+  if (button && card) openReceiptDialog(card.dataset.receiptId);
+});
 
 els.tbody.addEventListener('click', event => {
   const row = event.target.closest('[data-id]');
@@ -695,4 +885,10 @@ els.detail.addEventListener('click', event => {
   return performAction(action).catch(error => alert(error.message));
 });
 
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  state.installPrompt = event;
+});
+
+registerPanelApp().catch(() => {});
 checkAuth();

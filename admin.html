@@ -4,8 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel | Infinit Flores</title>
+  <meta name="theme-color" content="#005bbb"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=11"/>
+  <link rel="stylesheet" href="admin.css?v=12"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -56,6 +61,14 @@
             <i class="fas fa-file-export"></i>
             <span><strong>Exportar respaldo</strong><small>Descargar clientes en JSON</small></span>
           </button>
+          <button class="tool-item" type="button" id="enableNotificationsBtn">
+            <i class="fas fa-bell"></i>
+            <span><strong>Activar avisos</strong><small>Notificar comprobantes nuevos</small></span>
+          </button>
+          <button class="tool-item" type="button" id="installAppBtn">
+            <i class="fas fa-mobile-screen-button"></i>
+            <span><strong>Instalar aplicación</strong><small>Agregar el panel al celular</small></span>
+          </button>
         </div>
       </div>
     </div>
@@ -90,6 +103,18 @@
       </div>
     </section>
 
+    <section class="receipt-inbox" id="receiptInbox" aria-labelledby="receiptInboxTitle">
+      <div class="receipt-inbox-head">
+        <div>
+          <span class="inbox-kicker">Pagos reportados</span>
+          <h2 id="receiptInboxTitle">Comprobantes por revisar</h2>
+          <p>La IA prepara los datos. La recarga ocurre solamente cuando confirmas.</p>
+        </div>
+        <strong class="inbox-count" id="pendingReceiptCount">0</strong>
+      </div>
+      <div class="receipt-inbox-list" id="receiptInboxList"></div>
+    </section>
+
     <section class="admin-panel">
       <div class="panel-head">
         <div>
@@ -114,6 +139,27 @@
       </div>
     </section>
   </main>
+
+  <dialog class="client-dialog receipt-review-dialog" id="receiptDialog">
+    <div class="receipt-review-content">
+      <div class="dialog-head">
+        <div>
+          <h3>Revisar comprobante</h3>
+          <p id="receiptDialogSubtitle">Pago pendiente</p>
+        </div>
+        <button type="button" id="closeReceiptBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="receipt-review-body" id="receiptReviewBody"></div>
+      <label class="receipt-review-note">
+        <span>Nota de revisión (opcional)</span>
+        <textarea id="receiptReviewNote" maxlength="300" placeholder="Ejemplo: verificado en Banco Unión"></textarea>
+      </label>
+      <div class="receipt-review-actions">
+        <button class="btn danger" type="button" id="rejectReceiptBtn"><i class="fas fa-xmark"></i> Rechazar</button>
+        <button class="btn primary" type="button" id="confirmReceiptBtn"><i class="fas fa-check"></i> Confirmar y recargar 30d + 3h</button>
+      </div>
+    </div>
+  </dialog>
 
   <dialog class="client-dialog chart-dialog" id="chartDialog">
     <div class="chart-dialog-content">
@@ -293,6 +339,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=13"></script>
+  <script src="admin.js?v=14"></script>
 </body>
 </html>

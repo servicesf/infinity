@@ -1,6 +1,10 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+export function getSupabaseUrl() {
+  return SUPABASE_URL || '';
+}
+
 export function hasSupabaseConfig() {
   return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 }
@@ -32,6 +36,37 @@ export async function supabaseFetch(path, options = {}) {
   if (!response.ok) {
     const message = typeof data === 'object' && data?.message ? data.message : text;
     throw new Error(message || `Supabase error ${response.status}`);
+  }
+
+  return data;
+}
+
+export async function supabaseStorageFetch(path, options = {}) {
+  if (!hasSupabaseConfig()) {
+    throw new Error('Falta configurar SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.');
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/storage/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(options.headers || {})
+    }
+  });
+
+  const contentType = response.headers.get('content-type') || '';
+  const data = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : await response.text();
+
+  if (!response.ok) {
+    const message = typeof data === 'object' && data
+      ? data.message || data.error || data.statusCode
+      : data;
+    const error = new Error(String(message || `Supabase Storage error ${response.status}`));
+    error.status = response.status;
+    throw error;
   }
 
   return data;

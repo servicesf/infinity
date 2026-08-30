@@ -2042,6 +2042,258 @@ body.modal-open {
   line-height: 1.45;
 }
 
+.reported-receipts {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.reported-receipt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #bce8f7;
+  border-radius: 12px;
+  background: #f3fbff;
+}
+
+.reported-receipt > div {
+  display: grid;
+  gap: 2px;
+}
+
+.reported-receipt span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.reported-receipt.confirmado {
+  border-color: #b8e2c4;
+  background: #eefaf1;
+}
+
+.reported-receipt.rechazado {
+  border-color: #ffc8c1;
+  background: #fff4f2;
+}
+
+.receipt-file-picker {
+  display: block;
+  cursor: pointer;
+}
+
+.receipt-file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.receipt-file-picker > span {
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  align-content: center;
+  align-items: center;
+  gap: 3px 11px;
+  padding: 13px;
+  border: 2px dashed #8cd3e9;
+  border-radius: 14px;
+  color: var(--ink);
+  background: #f3fbff;
+}
+
+.receipt-file-picker i {
+  grid-row: span 2;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+}
+
+.receipt-file-picker small {
+  color: var(--muted);
+}
+
+.receipt-file-picker input:focus-visible + span,
+.receipt-file-picker:hover > span {
+  border-color: var(--blue);
+  background: #eaf8ff;
+}
+
+.receipt-file-preview {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #f5f9fc;
+}
+
+.receipt-file-preview[hidden] {
+  display: none;
+}
+
+.receipt-file-preview img {
+  width: min(280px, 100%);
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.receipt-file-preview span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.receipt-upload-result {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #f1d98c;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.receipt-upload-result.eligible {
+  border-color: #9bd9ad;
+  background: #f0fbf3;
+}
+
+.receipt-upload-result > img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.receipt-upload-result-copy {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.receipt-upload-result-copy > span {
+  color: var(--blue);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.receipt-upload-result-copy p {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.receipt-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.receipt-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  color: #9a3f35;
+  background: #fff0ee;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.receipt-check.passed {
+  color: #247a1f;
+  background: #e7f6ec;
+}
+
+.receipt-pending-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 5px;
+  color: #825500;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.receipt-upload-error {
+  display: flex;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid #ffc8c1;
+  border-radius: 10px;
+  color: #b42318;
+  background: #fff0ee;
+  font-weight: 700;
+}
+
+.public-receipt-dialog {
+  width: min(620px, calc(100% - 24px));
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 22px 80px rgba(18, 48, 71, 0.28);
+}
+
+.public-receipt-dialog::backdrop {
+  background: rgba(18, 48, 71, 0.52);
+}
+
+.public-receipt-dialog-content {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: #fff;
+}
+
+.public-receipt-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.public-receipt-dialog-head button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.public-receipt-dialog img {
+  width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #eef3f6;
+}
+
+@media (max-width: 600px) {
+  .receipt-upload-result {
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-upload-result > img {
+    max-height: 260px;
+  }
+
+  .reported-receipt {
+    align-items: flex-start;
+  }
+}
+
 .customer-payment-form {
   display: grid;
   gap: 13px;
