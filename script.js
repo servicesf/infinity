@@ -373,6 +373,7 @@ function renderManualPaymentDetail(method, amount = 0) {
 }
 
 function remainingServiceTime(dateValue) {
+  if (!dateValue || !String(dateValue).trim()) return 'Activo';
   const end = new Date(dateValue);
   const diff = end - new Date();
   if (Number.isNaN(end.getTime())) return 'Sin fecha';
@@ -383,6 +384,7 @@ function remainingServiceTime(dateValue) {
 }
 
 function formatDateTime(dateValue) {
+  if (!dateValue || !String(dateValue).trim()) return 'Sin fecha';
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) return 'Sin fecha';
   return date.toLocaleString('es-BO', {
@@ -411,6 +413,12 @@ function formatPersonName(value) {
 }
 
 function customerMessage(customer) {
+  if (!customer.pagadoHasta || !String(customer.pagadoHasta).trim()) {
+    if (customer.estado === 'cortado') {
+      return 'Tu servicio esta cortado. Realiza tu pago y la activacion quedara en proceso.';
+    }
+    return 'Tu servicio esta activo, pero todavia no tiene fecha de corte.';
+  }
   const remaining = remainingServiceTime(customer.pagadoHasta);
   if (remaining === 'Vencido') {
     return 'Tu servicio esta vencido. Puedes pagar con QR para reactivar tu conexion.';
@@ -443,17 +451,15 @@ function renderCustomer(customer) {
   }
 
   const payments = customer.ultimosPagos || [];
-  const estado = escapeHtml(customer.estado || '');
+  const hasCutDate = Boolean(customer.pagadoHasta && String(customer.pagadoHasta).trim());
+  const estadoValue = !hasCutDate && customer.estado !== 'cortado' ? 'activo' : (customer.estado || '');
+  const estado = escapeHtml(estadoValue);
   const qrEligible = Number(customer.precio || 0) === 149;
   const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Tigo Money';
-  const serviceLabel = customer.sector === 'inalambrico'
-    ? 'Mi servicio de Internet inalambrico'
-    : 'Mi servicio de fibra';
   target.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-head">
         <div>
-          <span>${serviceLabel}</span>
           <h2>${escapeHtml(formatPersonName(customer.nombre))}</h2>
         </div>
         <strong class="status-chip ${estado}">${estado}</strong>
