@@ -6,7 +6,7 @@ function isUuid(value) {
   return /^[0-9a-f-]{36}$/i.test(String(value || ''));
 }
 
-export default async function handler(req, res) {
+export async function handlePaymentReceiptView(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Metodo no permitido.' });
   const id = String(req.query.id || '');

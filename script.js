@@ -707,7 +707,7 @@ document.addEventListener('submit', async event => {
   if (result) result.innerHTML = '';
   try {
     const receiptDataUrl = await compressReceiptImage(file);
-    const response = await fetch('/api/payment-receipt', {
+    const response = await fetch('/api/qr-create?mode=receipt-upload', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -741,7 +741,7 @@ document.addEventListener('click', async event => {
   if (!button || !activeCustomer?.ci) return;
   button.disabled = true;
   try {
-    const response = await fetch(`/api/payment-receipt-view?id=${encodeURIComponent(button.dataset.publicReceiptId)}&ci=${encodeURIComponent(activeCustomer.ci)}`);
+    const response = await fetch(`/api/qr-create?mode=receipt-view&id=${encodeURIComponent(button.dataset.publicReceiptId)}&ci=${encodeURIComponent(activeCustomer.ci)}`);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'No se pudo abrir la imagen.');
     const dialog = document.getElementById('publicReceiptDialog');

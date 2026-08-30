@@ -47,7 +47,7 @@ async function queuePaymentOnce(customer, paymentId, paidUntil) {
   return true;
 }
 
-export default async function handler(req, res) {
+export async function handlePaymentReview(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (!requireAdmin(req, res)) return;
 

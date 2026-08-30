@@ -439,7 +439,7 @@ async function openReceiptDialog(id) {
   state.currentReceiptId = id;
   els.receiptDialog.showModal();
   try {
-    const data = await api(`/api/payment-review?id=${encodeURIComponent(id)}`);
+    const data = await api(`/api/qr-create?mode=receipt-review&id=${encodeURIComponent(id)}`);
     const payment = data.payment;
     const customer = data.customer || receiptCustomer(payment);
     const analysis = payment.qr_payload?.analysis || {};
@@ -483,7 +483,7 @@ async function reviewReceipt(decision) {
   const buttons = [document.getElementById('confirmReceiptBtn'), document.getElementById('rejectReceiptBtn')];
   buttons.forEach(button => { button.disabled = true; });
   try {
-    await api('/api/payment-review', {
+    await api('/api/qr-create?mode=receipt-review', {
       method: 'POST',
       body: JSON.stringify({ id, decision, note: document.getElementById('receiptReviewNote').value.trim() })
     });
@@ -514,7 +514,7 @@ async function enablePushNotifications() {
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('No se otorgó permiso para notificaciones.');
   const registration = await registerPanelApp();
-  const config = await api('/api/push-subscribe');
+  const config = await api('/api/qr-create?mode=push-subscribe');
   if (!config.enabled || !config.publicKey) throw new Error('Las notificaciones todavía no tienen claves VAPID configuradas en Vercel.');
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
@@ -523,7 +523,7 @@ async function enablePushNotifications() {
       applicationServerKey: urlBase64ToUint8Array(config.publicKey)
     });
   }
-  await api('/api/push-subscribe', { method: 'POST', body: JSON.stringify({ subscription }) });
+  await api('/api/qr-create?mode=push-subscribe', { method: 'POST', body: JSON.stringify({ subscription }) });
   return true;
 }
 

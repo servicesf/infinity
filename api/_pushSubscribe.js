@@ -2,7 +2,7 @@ import { getVapidPublicKey, listPushSubscriptions, pushEnabled } from './_push.j
 import { requireAdmin } from './_adminAuth.js';
 import { supabaseFetch } from './_supabase.js';
 
-export default async function handler(req, res) {
+export async function handlePushSubscribe(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (!requireAdmin(req, res)) return;
 

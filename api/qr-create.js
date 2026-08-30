@@ -1,4 +1,10 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
+import { handlePaymentReceipt } from './_paymentReceipt.js';
+import { handlePaymentReceiptView } from './_paymentReceiptView.js';
+import { handlePaymentReview } from './_paymentReview.js';
+import { handlePushSubscribe } from './_pushSubscribe.js';
+
+export const config = { maxDuration: 60 };
 
 const QR_API_URL = process.env.QR_API_URL;
 const QR_API_TOKEN = process.env.QR_API_TOKEN;
@@ -50,6 +56,12 @@ async function createQrWithProvider({ customer, amount, paymentId }) {
 }
 
 export default async function handler(req, res) {
+  const mode = String(req.query?.mode || req.body?.mode || '');
+  if (mode === 'receipt-upload') return handlePaymentReceipt(req, res);
+  if (mode === 'receipt-view') return handlePaymentReceiptView(req, res);
+  if (mode === 'receipt-review') return handlePaymentReview(req, res);
+  if (mode === 'push-subscribe') return handlePushSubscribe(req, res);
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
