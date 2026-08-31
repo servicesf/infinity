@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=13"/>
+  <link rel="stylesheet" href="admin.css?v=14"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -150,13 +150,9 @@
         <button type="button" id="closeReceiptBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
       <div class="receipt-review-body" id="receiptReviewBody"></div>
-      <label class="receipt-review-note" id="receiptReviewNoteField">
-        <span>Nota de revisión (opcional)</span>
-        <textarea id="receiptReviewNote" maxlength="300" placeholder="Ejemplo: verificado en Banco Unión"></textarea>
-      </label>
       <div class="receipt-review-actions" id="receiptReviewActions">
         <button class="btn danger" type="button" id="rejectReceiptBtn"><i class="fas fa-xmark"></i> Rechazar</button>
-        <button class="btn primary" type="button" id="confirmReceiptBtn"><i class="fas fa-check"></i> Confirmar y recargar 30d + 3h</button>
+        <button class="btn primary" type="button" id="confirmReceiptBtn"><i class="fas fa-check"></i> Confirmar pago</button>
       </div>
     </div>
   </dialog>
@@ -352,6 +348,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=15"></script>
+  <script src="admin.js?v=16"></script>
 </body>
 </html>

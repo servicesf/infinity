@@ -1305,57 +1305,6 @@ button.stat-card:focus-visible {
   font-size: 1.8rem;
 }
 
-.receipt-inbox-summary {
-  align-items: flex-start;
-  flex-wrap: wrap;
-  padding: 9px;
-  border-radius: 10px;
-  background: #f7fbfd;
-}
-
-.receipt-inbox-summary strong {
-  color: var(--blue);
-  font-size: 1.2rem;
-}
-
-.receipt-ai-state {
-  flex: 0 0 auto;
-  padding: 5px 8px;
-  border-radius: 999px;
-  color: #8a5b00;
-  background: #fff4cf;
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-
-.receipt-ai-state.eligible {
-  color: #247a1f;
-  background: #e7f6ec;
-}
-
-.admin-receipt-checks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.admin-receipt-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 7px;
-  border-radius: 999px;
-  color: #9a3f35;
-  background: #fff0ee;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.admin-receipt-check.passed {
-  color: #247a1f;
-  background: #e7f6ec;
-}
-
 .receipt-inbox-empty,
 .receipt-loading {
   grid-column: 1 / -1;
@@ -1401,7 +1350,7 @@ button.stat-card:focus-visible {
 
 .receipt-review-data {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
   align-content: start;
 }
@@ -1414,8 +1363,7 @@ button.stat-card:focus-visible {
   background: #f7fbfd;
 }
 
-.receipt-review-data span,
-.receipt-review-note > span {
+.receipt-review-data span {
   display: block;
   color: var(--muted);
   font-size: 0.76rem;
@@ -1426,45 +1374,6 @@ button.stat-card:focus-visible {
   display: block;
   margin-top: 3px;
   overflow-wrap: anywhere;
-}
-
-.admin-receipt-checks.detailed,
-.receipt-observations,
-.receipt-confirm-warning {
-  grid-column: 2;
-}
-
-.receipt-observations,
-.receipt-confirm-warning {
-  margin: 0;
-  padding: 10px;
-  border-radius: 10px;
-  color: var(--muted);
-  background: #f7fbfd;
-  line-height: 1.4;
-}
-
-.receipt-confirm-warning {
-  display: flex;
-  gap: 8px;
-  color: #825500;
-  background: #fff7df;
-  font-weight: 700;
-}
-
-.receipt-review-note {
-  display: grid;
-  gap: 6px;
-}
-
-.receipt-review-note textarea {
-  min-height: 72px;
-  resize: vertical;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  color: var(--ink);
-  font: inherit;
 }
 
 .receipt-review-actions {
@@ -1571,12 +1480,6 @@ button.stat-card:focus-visible {
   .receipt-review-body,
   .receipt-review-data {
     grid-template-columns: 1fr;
-  }
-
-  .admin-receipt-checks.detailed,
-  .receipt-observations,
-  .receipt-confirm-warning {
-    grid-column: 1;
   }
 
   .receipt-review-actions {

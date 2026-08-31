@@ -45,7 +45,6 @@ const els = {
   receiptDialog: document.getElementById('receiptDialog'),
   receiptReviewBody: document.getElementById('receiptReviewBody'),
   receiptReviewActions: document.getElementById('receiptReviewActions'),
-  receiptReviewNoteField: document.getElementById('receiptReviewNoteField'),
   receiptHistoryDialog: document.getElementById('receiptHistoryDialog'),
   receiptHistoryList: document.getElementById('receiptHistoryList')
 };
@@ -291,11 +290,6 @@ function receiptCustomer(payment) {
   return state.clients.find(client => client.id === payment.customer_id) || null;
 }
 
-function receiptCheck(label, value) {
-  const passed = value === true;
-  return `<span class="admin-receipt-check ${passed ? 'passed' : 'failed'}"><i class="fas ${passed ? 'fa-check' : 'fa-exclamation'}"></i>${label}</span>`;
-}
-
 function renderReceiptInbox() {
   const pending = state.payments
     .filter(payment => payment.status === 'pendiente' && payment.qr_payload?.source === 'customer-receipt')
@@ -466,9 +460,7 @@ function renderAll() {
 
 async function openReceiptDialog(id) {
   els.receiptReviewBody.innerHTML = '<div class="receipt-loading"><i class="fas fa-spinner fa-spin"></i> Cargando comprobante...</div>';
-  document.getElementById('receiptReviewNote').value = '';
   els.receiptReviewActions.hidden = true;
-  els.receiptReviewNoteField.hidden = true;
   state.currentReceiptId = id;
   els.receiptDialog.showModal();
   try {
@@ -476,34 +468,16 @@ async function openReceiptDialog(id) {
     const payment = data.payment;
     const customer = data.customer || receiptCustomer(payment);
     const analysis = payment.qr_payload?.analysis || {};
-    const evaluation = payment.qr_payload?.evaluation || {};
-    const checks = evaluation.checks || {};
     const isPending = payment.status === 'pendiente';
     const status = receiptStatus(payment);
     document.getElementById('receiptDialogSubtitle').textContent = `${formatPersonName(customer?.full_name || customer?.nombre || 'Cliente')} · ${customer?.ci ? `CI ${customer.ci}` : 'sin CI'}`;
     els.receiptReviewActions.hidden = !isPending;
-    els.receiptReviewNoteField.hidden = !isPending;
     els.receiptReviewBody.innerHTML = `
       <img class="receipt-review-image" src="${escapeHtml(data.imageUrl)}" alt="Comprobante enviado por el cliente"/>
       <div class="receipt-review-data">
         <div><span>Revisión</span><strong class="receipt-status ${status.className}">${status.label}</strong></div>
-        <div><span>Monto registrado</span><strong>${formatMoney(payment.amount)}</strong></div>
-        <div><span>Banco</span><strong>${escapeHtml(analysis.bank || 'No identificado')}</strong></div>
-        <div><span>Destinatario leído</span><strong>${escapeHtml(analysis.recipient || 'No identificado')}</strong></div>
-        <div><span>Fecha del pago</span><strong>${formatDateTime(analysis.transactionDate)}</strong></div>
-        <div><span>Referencia</span><strong>${escapeHtml(analysis.reference || payment.reference || 'Sin referencia')}</strong></div>
-        <div><span>Estado leído</span><strong>${escapeHtml(analysis.statusText || 'No identificado')}</strong></div>
-      </div>
-      <div class="admin-receipt-checks detailed">
-        ${receiptCheck('Es comprobante', checks.receipt)}
-        ${receiptCheck('Monto correcto', checks.amount)}
-        ${receiptCheck('Destino correcto', checks.recipient)}
-        ${receiptCheck('Fecha reciente', checks.recentDate)}
-        ${receiptCheck('Pago exitoso', checks.successful)}
-        ${receiptCheck('Lectura confiable', checks.confidence)}
-      </div>
-      ${analysis.observations || payment.qr_payload?.analysisError ? `<p class="receipt-observations"><strong>Observaciones:</strong> ${escapeHtml(analysis.observations || payment.qr_payload.analysisError)}</p>` : ''}
-      <p class="receipt-confirm-warning"><i class="fas fa-shield-halved"></i> Confirma solamente después de comparar la foto con tu banca. Al confirmar se recargan 30 días + 3 horas.</p>`;
+        <div><span>Fecha del pago</span><strong>${formatDateTime(analysis.transactionDate || payment.created_at || payment.paid_at)}</strong></div>
+      </div>`;
   } catch (error) {
     els.receiptReviewBody.innerHTML = `<div class="receipt-loading error"><i class="fas fa-circle-exclamation"></i>${escapeHtml(error.message)}</div>`;
   }
@@ -523,7 +497,7 @@ async function reviewReceipt(decision) {
   try {
     await api('/api/qr-create?mode=receipt-review', {
       method: 'POST',
-      body: JSON.stringify({ id, decision, note: document.getElementById('receiptReviewNote').value.trim() })
+      body: JSON.stringify({ id, decision, note: '' })
     });
     els.receiptDialog.close();
     state.currentReceiptId = null;
