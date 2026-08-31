@@ -41,6 +41,16 @@ test('mantiene solamente los tres controles esenciales', () => {
   assert.deepEqual(Object.keys(evaluation.checks), ['amount', 'recipient', 'recentDate']);
 });
 
+test('acepta el nombre en otro orden y la variante Ayala', () => {
+  const evaluation = evaluateReceipt({
+    recipient: 'FLORES MARTIR LORENZO AYALA',
+    amount: 149,
+    transactionDate: new Date().toISOString()
+  }, 149, recipient);
+  assert.equal(evaluation.checks.recipient, true);
+  assert.equal(evaluation.eligible, true);
+});
+
 test('extrae JSON aunque el modelo agregue un bloque markdown', () => {
   assert.deepEqual(parseAiJson('```json\n{"isReceipt":true}\n```'), { isReceipt: true });
 });

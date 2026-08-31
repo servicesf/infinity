@@ -62,6 +62,7 @@ export async function handlePaymentReceipt(req, res) {
 
   let storagePath = '';
   let paymentId = '';
+  let processingStage = 'validacion';
   try {
     const { customerId, ci, receiptDataUrl, method = 'QR bancario', declaredReference = '' } = req.body || {};
     const cleanCi = String(ci || '').trim();
@@ -70,6 +71,7 @@ export async function handlePaymentReceipt(req, res) {
     }
     if (/^SIN-CI-/i.test(cleanCi)) return res.status(400).json({ error: 'Primero registra tu carnet real con Infinit.' });
 
+    processingStage = 'consulta_cliente';
     const customers = await supabaseFetch(
       `customers?select=*&id=eq.${customerId}&ci=eq.${encodeURIComponent(cleanCi)}&limit=1`,
       { method: 'GET', prefer: '' }
@@ -78,6 +80,7 @@ export async function handlePaymentReceipt(req, res) {
     if (!customer) return res.status(404).json({ error: 'Cliente o carnet no encontrado.' });
 
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    processingStage = 'limite_envios';
     const recentCustomerPayments = await supabaseFetch(
       `payments?select=id,qr_payload,created_at&customer_id=eq.${customer.id}&created_at=gte.${encodeURIComponent(tenMinutesAgo)}&order=created_at.desc&limit=20`,
       { method: 'GET', prefer: '' }
@@ -86,8 +89,10 @@ export async function handlePaymentReceipt(req, res) {
       return res.status(429).json({ error: 'Ya enviaste varios comprobantes. Espera 10 minutos antes de intentar otra vez.' });
     }
 
+    processingStage = 'validacion_imagen';
     const { buffer, mimeType } = parseReceiptDataUrl(receiptDataUrl);
     const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
+    processingStage = 'comprobacion_duplicado';
     const recent = await supabaseFetch(
       'payments?select=id,status,qr_payload&method=eq.comprobante&order=created_at.desc&limit=200',
       { method: 'GET', prefer: '' }
@@ -97,6 +102,7 @@ export async function handlePaymentReceipt(req, res) {
       return res.status(409).json({ error: 'Este comprobante ya fue enviado anteriormente.', paymentId: duplicate.id });
     }
 
+    processingStage = 'guardar_imagen';
     storagePath = await uploadReceipt(customer.id, buffer, mimeType);
     const now = new Date().toISOString();
     const payload = {
@@ -111,6 +117,7 @@ export async function handlePaymentReceipt(req, res) {
       expectedRecipient: EXPECTED_RECIPIENT,
       analysisStatus: 'procesando'
     };
+    processingStage = 'registrar_pago';
     const rows = await supabaseFetch('payments', {
       method: 'POST',
       body: JSON.stringify({
@@ -153,12 +160,16 @@ export async function handlePaymentReceipt(req, res) {
       analysisError,
       analyzedAt: new Date().toISOString()
     };
+    processingStage = 'guardar_analisis';
     const updatedRows = await supabaseFetch(`payments?id=eq.${payment.id}`, {
       method: 'PATCH',
       body: JSON.stringify({
         reference: analysis?.reference || payload.declaredReference || null,
         qr_payload: finalPayload
       })
+    }).catch(error => {
+      console.error('receipt-analysis-save-failed', { message: error.message });
+      return [];
     });
     await logDecision(payment.id, 'receipt-ai-analysis', {
       analysisStatus: finalPayload.analysisStatus,
@@ -177,8 +188,24 @@ export async function handlePaymentReceipt(req, res) {
       customerCi: customer.ci
     });
   } catch (error) {
+    console.error('receipt-upload-failed', {
+      stage: processingStage,
+      status: Number(error.status) || null,
+      message: error.message
+    });
     if (!paymentId && storagePath) await deleteReceipt(storagePath).catch(() => {});
     if (paymentId) await logDecision(paymentId, 'receipt-processing-error', {}, false, error.message);
-    return res.status(500).json({ error: 'No se pudo procesar el comprobante. Intenta nuevamente.' });
+    const stageMessages = {
+      consulta_cliente: 'No se pudo consultar el cliente en Supabase.',
+      limite_envios: 'No se pudo comprobar los envios recientes.',
+      validacion_imagen: 'No se pudo leer la imagen seleccionada.',
+      comprobacion_duplicado: 'No se pudo comprobar si el comprobante ya existe.',
+      guardar_imagen: 'No se pudo guardar la imagen del comprobante en Supabase.',
+      registrar_pago: 'La imagen se recibio, pero no se pudo registrar el pago pendiente.'
+    };
+    return res.status(500).json({
+      error: stageMessages[processingStage] || 'No se pudo procesar el comprobante. Intenta nuevamente.',
+      code: `receipt_${processingStage}`
+    });
   }
 }

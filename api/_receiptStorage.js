@@ -11,17 +11,21 @@ export async function ensureReceiptBucket() {
     await supabaseStorageFetch(`bucket/${RECEIPT_BUCKET}`, { method: 'GET' });
   } catch (error) {
     if (Number(error.status) !== 404) throw error;
-    await supabaseStorageFetch('bucket', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: RECEIPT_BUCKET,
-        name: RECEIPT_BUCKET,
-        public: false,
-        file_size_limit: 3145728,
-        allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp']
-      })
-    });
+    try {
+      await supabaseStorageFetch('bucket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: RECEIPT_BUCKET,
+          name: RECEIPT_BUCKET,
+          public: false,
+          file_size_limit: 3145728,
+          allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp']
+        })
+      });
+    } catch (createError) {
+      if (Number(createError.status) !== 409) throw createError;
+    }
   }
 }
 
