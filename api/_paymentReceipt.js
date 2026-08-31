@@ -33,7 +33,7 @@ async function analyzeReceipt(dataUrl, expectedAmount) {
           content: [
             {
               type: 'text',
-              text: `Analiza esta imagen como comprobante bancario boliviano. No inventes datos ilegibles. Devuelve UNICAMENTE JSON con esta forma exacta: {"isReceipt":boolean,"bank":string,"recipient":string,"amount":number|null,"transactionDate":string,"reference":string,"statusText":string,"successful":boolean,"confidence":number,"observations":string}. transactionDate debe ser ISO 8601 si aparece fecha y hora. successful solo puede ser true si la imagen muestra claramente una operacion exitosa/completada. El monto esperado es Bs. ${Number(expectedAmount || 0).toFixed(2)} y el destinatario esperado es ${EXPECTED_RECIPIENT}, pero transcribe lo que realmente ves.`
+              text: `Analiza esta imagen como comprobante bancario boliviano, ya sea captura digital, foto o comprobante impreso en papel. No inventes datos ilegibles. Prioriza solamente tres datos: monto, fecha de la transaccion y nombre del destinatario. Devuelve UNICAMENTE JSON con esta forma exacta: {"isReceipt":boolean,"bank":string,"recipient":string,"amount":number|null,"transactionDate":string,"reference":string,"statusText":string,"successful":boolean,"confidence":number,"observations":string}. transactionDate debe ser ISO 8601 si aparece fecha y hora. El monto esperado es Bs. ${Number(expectedAmount || 0).toFixed(2)} y el destinatario esperado es ${EXPECTED_RECIPIENT}, pero transcribe lo que realmente ves y deja vacio cualquier dato que no sea legible.`
             },
             { type: 'image_url', image_url: { url: dataUrl } }
           ]

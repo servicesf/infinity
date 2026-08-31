@@ -64,12 +64,9 @@ function isRecentDate(value, now = new Date()) {
 export function evaluateReceipt(analysis, expectedAmount, expectedRecipient, now = new Date()) {
   const amount = Number(analysis?.amount);
   const checks = {
-    receipt: analysis?.isReceipt === true,
     amount: Number.isFinite(amount) && Math.abs(amount - Number(expectedAmount || 0)) <= 0.01,
     recipient: recipientMatches(analysis?.recipient, expectedRecipient),
-    recentDate: isRecentDate(analysis?.transactionDate, now),
-    successful: analysis?.successful === true,
-    confidence: Number(analysis?.confidence || 0) >= 0.7
+    recentDate: isRecentDate(analysis?.transactionDate, now)
   };
   return {
     checks,

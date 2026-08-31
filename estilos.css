@@ -2301,7 +2301,7 @@ body.modal-open {
 
 .customer-payment-methods {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -2385,6 +2385,36 @@ body.modal-open {
 .customer-reference small {
   color: var(--muted);
   line-height: 1.35;
+}
+
+.transfer-account-card {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid #9ddcf0;
+  border-radius: 14px;
+  text-align: center;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(0, 126, 214, 0.08);
+}
+
+.transfer-account-card span,
+.transfer-account-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.transfer-account-card strong {
+  color: var(--blue);
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+
+.transfer-account-card b {
+  color: var(--ink);
+  font-size: 1rem;
 }
 
 .qr-payment-visual {

@@ -325,15 +325,12 @@ function manualPaymentDetail(method, amount = 0) {
   const paymentAmount = Number(amount || 0);
   const qrMatchesAmount = paymentAmount === 149;
   const details = {
-    'Tigo Money': {
-      icon: 'fa-mobile-screen',
-      title: 'Tigo Money',
-      text: 'Envia el monto al numero 67236144 y guarda la captura o numero de transaccion.'
-    },
     'Transferencia bancaria': {
       icon: 'fa-building-columns',
       title: 'Transferencia bancaria',
-      text: 'Transfiere a la cuenta 10000027518105 y guarda el comprobante.'
+      text: 'Realiza la transferencia y sube una foto o captura completa del comprobante.',
+      account: '10000027518105',
+      accountHolder: 'LORENZO MARTIR FLORES ALAYA'
     },
     'QR bancario estatico': {
       icon: 'fa-qrcode',
@@ -349,7 +346,7 @@ function manualPaymentDetail(method, amount = 0) {
       text: CASH_PAYMENT_ADDRESS
     }
   };
-  return details[method] || details['Tigo Money'];
+  return details[method] || details['Transferencia bancaria'];
 }
 
 function renderManualPaymentDetail(method, amount = 0) {
@@ -360,6 +357,14 @@ function renderManualPaymentDetail(method, amount = 0) {
         <i class="fas ${detail.icon}" aria-hidden="true"></i>
         <div><strong>${detail.title}</strong><span>${detail.text}</span></div>
       </div>
+      ${detail.account ? `
+        <div class="transfer-account-card">
+          <span>Número de cuenta</span>
+          <strong>${detail.account}</strong>
+          <small>A nombre de</small>
+          <b>${detail.accountHolder}</b>
+        </div>
+      ` : ''}
       ${detail.image ? `
         <figure class="qr-payment-visual">
           <a href="${detail.image}" target="_blank" rel="noopener" aria-label="Abrir QR bancario en tamano completo">
@@ -442,12 +447,9 @@ function receiptStatusLabel(receipt) {
 
 function renderReceiptChecks(receipt) {
   const labels = {
-    receipt: 'Comprobante legible',
     amount: 'Monto correcto',
     recipient: 'Destinatario correcto',
-    recentDate: 'Fecha reciente',
-    successful: 'Pago exitoso',
-    confidence: 'Lectura confiable'
+    recentDate: 'Fecha reciente'
   };
   return Object.entries(labels).map(([key, label]) => {
     const passed = receipt.checks?.[key] === true;
@@ -557,7 +559,7 @@ function renderCustomer(customer) {
   const estadoValue = !hasCutDate && customer.estado !== 'cortado' ? 'activo' : (customer.estado || '');
   const estado = escapeHtml(estadoValue);
   const qrEligible = Number(customer.precio || 0) === 149;
-  const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Tigo Money';
+  const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Transferencia bancaria';
   target.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-head">
@@ -590,7 +592,7 @@ function renderCustomer(customer) {
           </div>
           <span class="review-chip"><i class="fas fa-shield-halved"></i> Revisión rápida</span>
         </div>
-        <p class="manual-payment-intro">Paga por QR y sube aquí la captura completa. Te avisaremos cuando tu recarga esté confirmada.</p>
+        <p class="manual-payment-intro">Paga por QR o transferencia y sube aquí el comprobante completo. Te avisaremos cuando tu recarga esté confirmada.</p>
         <form class="customer-payment-form" data-customer-payment-form>
           <input type="hidden" name="customerId" value="${escapeHtml(customer.id)}"/>
           <input type="hidden" name="customerName" value="${escapeHtml(formatPersonName(customer.nombre))}"/>
@@ -599,15 +601,14 @@ function renderCustomer(customer) {
           <input type="hidden" name="customerAmount" value="${escapeHtml(customer.precio)}"/>
           <fieldset class="customer-payment-methods">
             <legend>Metodo de pago</legend>
-            <label><input type="radio" name="manualMethod" value="Tigo Money" ${qrEligible ? '' : 'checked'}/><span><i class="fas fa-mobile-screen"></i>Tigo Money</span></label>
-            <label><input type="radio" name="manualMethod" value="Transferencia bancaria"/><span><i class="fas fa-building-columns"></i>Transferencia</span></label>
+            <label><input type="radio" name="manualMethod" value="Transferencia bancaria" ${qrEligible ? '' : 'checked'}/><span><i class="fas fa-building-columns"></i>Transferencia</span></label>
             <label><input type="radio" name="manualMethod" value="QR bancario estatico" ${qrEligible ? 'checked' : ''}/><span><i class="fas fa-qrcode"></i>QR bancario</span></label>
             <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
           </fieldset>
           <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
           <label class="receipt-file-picker">
             <input name="receiptFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required/>
-            <span><i class="fas fa-camera"></i><strong>Tomar foto o elegir comprobante</strong><small>Debe verse completo, nítido y sin recortes.</small></span>
+            <span><i class="fas fa-camera"></i><strong>Tomar foto o elegir comprobante</strong><small>Acepta capturas y fotos de comprobantes impresos; deben verse completos y nítidos.</small></span>
           </label>
           <div class="receipt-file-preview" data-receipt-file-preview hidden></div>
           <button class="btn primary full" type="submit" data-receipt-submit><i class="fas fa-cloud-arrow-up"></i> Ya pagué</button>
