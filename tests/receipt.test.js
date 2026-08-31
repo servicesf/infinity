@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import { evaluateReceipt, parseAiJson, parseReceiptDataUrl } from '../api/_receipt.js';
+import { isMissingReceiptBucketError } from '../api/_receiptStorage.js';
 
 const recipient = 'Lorenzo Martir Flores Alaya';
 
@@ -49,6 +50,12 @@ test('acepta el nombre en otro orden y la variante Ayala', () => {
   }, 149, recipient);
   assert.equal(evaluation.checks.recipient, true);
   assert.equal(evaluation.eligible, true);
+});
+
+test('reconoce respuestas nuevas y antiguas cuando falta el bucket', () => {
+  assert.equal(isMissingReceiptBucketError({ status: 400, message: 'Bucket not found' }), true);
+  assert.equal(isMissingReceiptBucketError({ status: 404, message: 'NoSuchBucket' }), true);
+  assert.equal(isMissingReceiptBucketError({ status: 403, message: 'Unauthorized' }), false);
 });
 
 test('extrae JSON aunque el modelo agregue un bloque markdown', () => {

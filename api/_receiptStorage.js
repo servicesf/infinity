@@ -6,11 +6,17 @@ function encodeStoragePath(path) {
   return String(path || '').split('/').map(encodeURIComponent).join('/');
 }
 
+export function isMissingReceiptBucketError(error) {
+  const status = Number(error?.status);
+  const message = String(error?.message || '');
+  return status === 404 || (status === 400 && /bucket\s+not\s+found/i.test(message));
+}
+
 export async function ensureReceiptBucket() {
   try {
     await supabaseStorageFetch(`bucket/${RECEIPT_BUCKET}`, { method: 'GET' });
   } catch (error) {
-    if (Number(error.status) !== 404) throw error;
+    if (!isMissingReceiptBucketError(error)) throw error;
     try {
       await supabaseStorageFetch('bucket', {
         method: 'POST',
