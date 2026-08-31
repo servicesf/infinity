@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=12"/>
+  <link rel="stylesheet" href="admin.css?v=13"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -56,6 +56,10 @@
           <button class="tool-item" type="button" id="chartBtn">
             <i class="fas fa-chart-column"></i>
             <span><strong>Gráfico</strong><small>Ganancias por período</small></span>
+          </button>
+          <button class="tool-item" type="button" id="receiptHistoryBtn">
+            <i class="fas fa-clock-rotate-left"></i>
+            <span><strong>Historial de comprobantes</strong><small>Ver pagos enviados y revisados</small></span>
           </button>
           <button class="tool-item" type="button" id="exportBtn">
             <i class="fas fa-file-export"></i>
@@ -105,11 +109,7 @@
 
     <section class="receipt-inbox" id="receiptInbox" aria-labelledby="receiptInboxTitle">
       <div class="receipt-inbox-head">
-        <div>
-          <span class="inbox-kicker">Pagos reportados</span>
-          <h2 id="receiptInboxTitle">Comprobantes por revisar</h2>
-          <p>La IA prepara los datos. La recarga ocurre solamente cuando confirmas.</p>
-        </div>
+        <h2 id="receiptInboxTitle">Comprobantes por revisar</h2>
         <strong class="inbox-count" id="pendingReceiptCount">0</strong>
       </div>
       <div class="receipt-inbox-list" id="receiptInboxList"></div>
@@ -150,14 +150,27 @@
         <button type="button" id="closeReceiptBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
       <div class="receipt-review-body" id="receiptReviewBody"></div>
-      <label class="receipt-review-note">
+      <label class="receipt-review-note" id="receiptReviewNoteField">
         <span>Nota de revisión (opcional)</span>
         <textarea id="receiptReviewNote" maxlength="300" placeholder="Ejemplo: verificado en Banco Unión"></textarea>
       </label>
-      <div class="receipt-review-actions">
+      <div class="receipt-review-actions" id="receiptReviewActions">
         <button class="btn danger" type="button" id="rejectReceiptBtn"><i class="fas fa-xmark"></i> Rechazar</button>
         <button class="btn primary" type="button" id="confirmReceiptBtn"><i class="fas fa-check"></i> Confirmar y recargar 30d + 3h</button>
       </div>
+    </div>
+  </dialog>
+
+  <dialog class="client-dialog receipt-history-dialog" id="receiptHistoryDialog">
+    <div class="receipt-history-content">
+      <div class="dialog-head">
+        <div>
+          <h3>Historial de comprobantes</h3>
+          <p>Comprobantes enviados por los clientes.</p>
+        </div>
+        <button type="button" id="closeReceiptHistoryBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="receipt-history-list" id="receiptHistoryList"></div>
     </div>
   </dialog>
 
@@ -339,6 +352,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=14"></script>
+  <script src="admin.js?v=15"></script>
 </body>
 </html>

@@ -43,7 +43,11 @@ const els = {
   receiptInbox: document.getElementById('receiptInbox'),
   receiptInboxList: document.getElementById('receiptInboxList'),
   receiptDialog: document.getElementById('receiptDialog'),
-  receiptReviewBody: document.getElementById('receiptReviewBody')
+  receiptReviewBody: document.getElementById('receiptReviewBody'),
+  receiptReviewActions: document.getElementById('receiptReviewActions'),
+  receiptReviewNoteField: document.getElementById('receiptReviewNoteField'),
+  receiptHistoryDialog: document.getElementById('receiptHistoryDialog'),
+  receiptHistoryList: document.getElementById('receiptHistoryList')
 };
 
 const authEls = {
@@ -309,31 +313,57 @@ function renderReceiptInbox() {
 
   els.receiptInboxList.innerHTML = pending.map(payment => {
     const customer = receiptCustomer(payment);
-    const analysis = payment.qr_payload?.analysis || {};
-    const evaluation = payment.qr_payload?.evaluation || {};
-    const checks = evaluation.checks || {};
-    const eligible = evaluation.eligible === true;
     return `
-      <article class="receipt-inbox-card ${eligible ? 'eligible' : 'review'}" data-receipt-id="${escapeHtml(payment.id)}">
+      <article class="receipt-inbox-card" data-receipt-id="${escapeHtml(payment.id)}">
         <div class="receipt-inbox-card-head">
           <div>
             <strong>${escapeHtml(formatPersonName(customer?.nombre || 'Cliente'))}</strong>
-            <span>${escapeHtml(formatCi(customer?.ci))} · ${formatDateTime(payment.created_at || payment.paid_at)}</span>
+            <span>${escapeHtml(formatCi(customer?.ci))}</span>
+            <time datetime="${escapeHtml(payment.created_at || payment.paid_at || '')}">${formatDateTime(payment.created_at || payment.paid_at)}</time>
           </div>
-          <span class="receipt-ai-state ${eligible ? 'eligible' : 'review'}">${eligible ? 'IA: apto' : 'Revisar'}</span>
-        </div>
-        <div class="receipt-inbox-summary">
-          <strong>${formatMoney(payment.amount)}</strong>
-          <span>${escapeHtml(analysis.bank || 'Banco no identificado')}</span>
-          <span>${escapeHtml(analysis.reference || payment.reference || 'Sin referencia')}</span>
-        </div>
-        <div class="admin-receipt-checks">
-          ${receiptCheck('Monto', checks.amount)}
-          ${receiptCheck('Destino', checks.recipient)}
-          ${receiptCheck('Fecha', checks.recentDate)}
-          ${receiptCheck('Exitoso', checks.successful)}
         </div>
         <button class="btn primary full" type="button" data-receipt-action="view"><i class="fas fa-receipt"></i> Revisar comprobante</button>
+      </article>`;
+  }).join('');
+}
+
+function receiptStatus(payment) {
+  if (payment.status === 'confirmado') return { label: 'Confirmado', className: 'confirmed' };
+  if (payment.status === 'rechazado') return { label: 'Rechazado', className: 'rejected' };
+  return { label: 'Pendiente', className: 'pending' };
+}
+
+function renderReceiptHistory() {
+  const receipts = state.payments
+    .filter(payment => payment.qr_payload?.source === 'customer-receipt')
+    .sort((a, b) => new Date(b.created_at || b.paid_at) - new Date(a.created_at || a.paid_at));
+
+  if (!receipts.length) {
+    els.receiptHistoryList.innerHTML = `
+      <div class="receipt-history-empty">
+        <i class="fas fa-receipt"></i>
+        <strong>Sin comprobantes todavía</strong>
+        <span>Cuando un cliente envíe uno, aparecerá aquí.</span>
+      </div>`;
+    return;
+  }
+
+  els.receiptHistoryList.innerHTML = receipts.map(payment => {
+    const customer = receiptCustomer(payment);
+    const status = receiptStatus(payment);
+    return `
+      <article class="receipt-history-item" data-history-receipt-id="${escapeHtml(payment.id)}">
+        <div class="receipt-history-main">
+          <strong>${escapeHtml(formatPersonName(customer?.nombre || 'Cliente'))}</strong>
+          <span>${escapeHtml(formatCi(customer?.ci))} · ${formatDateTime(payment.created_at || payment.paid_at)}</span>
+        </div>
+        <div class="receipt-history-meta">
+          <strong>${formatMoney(payment.amount)}</strong>
+          <span class="receipt-status ${status.className}">${status.label}</span>
+        </div>
+        <button class="mini-btn" type="button" data-history-receipt-action="view">
+          <i class="fas fa-eye"></i> Ver comprobante
+        </button>
       </article>`;
   }).join('');
 }
@@ -429,6 +459,7 @@ function renderAll() {
   renderStats();
   renderIncome();
   renderReceiptInbox();
+  renderReceiptHistory();
   renderClients();
   renderDetail();
 }
@@ -436,6 +467,8 @@ function renderAll() {
 async function openReceiptDialog(id) {
   els.receiptReviewBody.innerHTML = '<div class="receipt-loading"><i class="fas fa-spinner fa-spin"></i> Cargando comprobante...</div>';
   document.getElementById('receiptReviewNote').value = '';
+  els.receiptReviewActions.hidden = true;
+  els.receiptReviewNoteField.hidden = true;
   state.currentReceiptId = id;
   els.receiptDialog.showModal();
   try {
@@ -445,10 +478,15 @@ async function openReceiptDialog(id) {
     const analysis = payment.qr_payload?.analysis || {};
     const evaluation = payment.qr_payload?.evaluation || {};
     const checks = evaluation.checks || {};
+    const isPending = payment.status === 'pendiente';
+    const status = receiptStatus(payment);
     document.getElementById('receiptDialogSubtitle').textContent = `${formatPersonName(customer?.full_name || customer?.nombre || 'Cliente')} · ${customer?.ci ? `CI ${customer.ci}` : 'sin CI'}`;
+    els.receiptReviewActions.hidden = !isPending;
+    els.receiptReviewNoteField.hidden = !isPending;
     els.receiptReviewBody.innerHTML = `
       <img class="receipt-review-image" src="${escapeHtml(data.imageUrl)}" alt="Comprobante enviado por el cliente"/>
       <div class="receipt-review-data">
+        <div><span>Revisión</span><strong class="receipt-status ${status.className}">${status.label}</strong></div>
         <div><span>Monto registrado</span><strong>${formatMoney(payment.amount)}</strong></div>
         <div><span>Banco</span><strong>${escapeHtml(analysis.bank || 'No identificado')}</strong></div>
         <div><span>Destinatario leído</span><strong>${escapeHtml(analysis.recipient || 'No identificado')}</strong></div>
@@ -719,6 +757,11 @@ document.getElementById('chartBtn').addEventListener('click', () => {
   renderIncome();
   chartDialog.showModal();
 });
+document.getElementById('receiptHistoryBtn').addEventListener('click', () => {
+  toolsMenu.classList.remove('open');
+  renderReceiptHistory();
+  els.receiptHistoryDialog.showModal();
+});
 document.getElementById('exportBtn').addEventListener('click', () => {
   toolsMenu.classList.remove('open');
   exportData();
@@ -855,6 +898,7 @@ document.getElementById('incomeResetBtn').addEventListener('click', () => {
 });
 document.getElementById('closeChartBtn').addEventListener('click', () => chartDialog.close());
 document.getElementById('closeReceiptBtn').addEventListener('click', () => els.receiptDialog.close());
+document.getElementById('closeReceiptHistoryBtn').addEventListener('click', () => els.receiptHistoryDialog.close());
 document.getElementById('confirmReceiptBtn').addEventListener('click', () => reviewReceipt('confirm').catch(error => alert(error.message)));
 document.getElementById('rejectReceiptBtn').addEventListener('click', () => reviewReceipt('reject').catch(error => alert(error.message)));
 
@@ -862,6 +906,14 @@ els.receiptInboxList.addEventListener('click', event => {
   const button = event.target.closest('[data-receipt-action="view"]');
   const card = event.target.closest('[data-receipt-id]');
   if (button && card) openReceiptDialog(card.dataset.receiptId);
+});
+
+els.receiptHistoryList.addEventListener('click', event => {
+  const button = event.target.closest('[data-history-receipt-action="view"]');
+  const card = event.target.closest('[data-history-receipt-id]');
+  if (!button || !card) return;
+  els.receiptHistoryDialog.close();
+  openReceiptDialog(card.dataset.historyReceiptId);
 });
 
 els.tbody.addEventListener('click', event => {
