@@ -337,9 +337,9 @@ function manualPaymentDetail(method, amount = 0) {
     },
     'QR bancario estatico': {
       icon: 'fa-qrcode',
-      title: qrMatchesAmount ? 'QR Banco Union · Bs. 149' : 'QR bancario de Bs. 149',
+      title: qrMatchesAmount ? 'Paga con YaSta por QR' : 'QR bancario de Bs. 149',
       text: qrMatchesAmount
-        ? 'Valido para pagar tu plan de Internet fibra o inalambrico. Guarda el comprobante.'
+        ? 'Escanea el QR, realiza el pago y sube tu comprobante. Lo revisaremos para recargar tu servicio.'
         : `Este QR cobra Bs. 149 y tu mensualidad es Bs. ${paymentAmount || 0}. Elige otro metodo o consulta por WhatsApp.`,
       image: qrMatchesAmount ? STATIC_PAYMENT_QR : ''
     },
@@ -363,10 +363,9 @@ function renderManualPaymentDetail(method, amount = 0) {
       ${detail.image ? `
         <figure class="qr-payment-visual">
           <a href="${detail.image}" target="_blank" rel="noopener" aria-label="Abrir QR bancario en tamano completo">
-            <img src="${detail.image}" alt="QR Banco Union de Bs. 149 para pagar el servicio Infinit" loading="lazy" decoding="async"/>
+            <img src="${detail.image}" alt="QR YaSta de Bs. 149 para pagar el servicio Infinit" loading="lazy" decoding="async"/>
           </a>
-          <figcaption>Monto fijo: Bs. 149 · Fibra e inalambrico</figcaption>
-          <a class="btn light qr-download" href="${detail.image}" download="QR-Infinit-Bs149.jpeg"><i class="fas fa-download"></i> Guardar QR</a>
+          <a class="btn light qr-download" href="${detail.image}" download="QR-YaSta-Infinit-Bs149.jpeg"><i class="fas fa-download"></i> Guardar QR</a>
         </figure>
       ` : ''}
     </div>
@@ -590,9 +589,9 @@ function renderCustomer(customer) {
             <span>Pago manual</span>
             <h3 id="manualPaymentTitle">Elige como quieres pagar</h3>
           </div>
-          <span class="review-chip"><i class="fas fa-shield-halved"></i> Análisis + confirmación</span>
+          <span class="review-chip"><i class="fas fa-shield-halved"></i> Revisión rápida</span>
         </div>
-        <p class="manual-payment-intro">Paga y sube aquí la captura completa. El sistema leerá monto, destinatario, fecha y estado; tú recibirás la recarga después de que el administrador confirme.</p>
+        <p class="manual-payment-intro">Paga por QR y sube aquí la captura completa. Te avisaremos cuando tu recarga esté confirmada.</p>
         <form class="customer-payment-form" data-customer-payment-form>
           <input type="hidden" name="customerId" value="${escapeHtml(customer.id)}"/>
           <input type="hidden" name="customerName" value="${escapeHtml(formatPersonName(customer.nombre))}"/>
@@ -607,18 +606,12 @@ function renderCustomer(customer) {
             <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
           </fieldset>
           <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
-          <label class="customer-reference">
-            <span>Referencia (opcional)</span>
-            <input name="paymentReference" type="text" maxlength="100" placeholder="El sistema también intentará leerla"/>
-            <small>No escribas contraseñas ni datos bancarios sensibles.</small>
-          </label>
           <label class="receipt-file-picker">
             <input name="receiptFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required/>
             <span><i class="fas fa-camera"></i><strong>Tomar foto o elegir comprobante</strong><small>Debe verse completo, nítido y sin recortes.</small></span>
           </label>
           <div class="receipt-file-preview" data-receipt-file-preview hidden></div>
-          <button class="btn primary full" type="submit" data-receipt-submit><i class="fas fa-cloud-arrow-up"></i> Enviar para revisión</button>
-          <p class="payment-warning"><i class="fas fa-circle-info"></i> La IA no recarga por sí sola. El administrador confirma el pago y entonces se agregan 30 días + 3 horas.</p>
+          <button class="btn primary full" type="submit" data-receipt-submit><i class="fas fa-cloud-arrow-up"></i> Ya pagué</button>
           <div data-receipt-upload-result aria-live="polite"></div>
         </form>
       </section>
@@ -714,7 +707,7 @@ document.addEventListener('submit', async event => {
         customerId: formData.get('customerId'),
         ci: formData.get('customerCi'),
         method: formData.get('manualMethod'),
-        declaredReference: String(formData.get('paymentReference') || '').trim(),
+        declaredReference: '',
         receiptDataUrl
       })
     });
@@ -722,7 +715,6 @@ document.addEventListener('submit', async event => {
     if (!response.ok) throw new Error(data.error || 'No se pudo enviar el comprobante.');
     if (result) result.innerHTML = renderUploadResult(data.receipt, data.customerName, data.customerCi, receiptDataUrl);
     form.querySelector('input[name="receiptFile"]').value = '';
-    form.querySelector('input[name="paymentReference"]').value = '';
     if (activeCustomer) {
       activeCustomer.comprobantes = [data.receipt, ...(activeCustomer.comprobantes || []).filter(item => item.id !== data.receipt.id)];
     }
