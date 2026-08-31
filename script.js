@@ -318,6 +318,7 @@ const demoCustomers = [
 ];
 
 const CASH_PAYMENT_ADDRESS = 'Final avenida Vernal, una cuadra antes de llegar a FATECIPOL.';
+const CASH_PAYMENT_MAP = 'https://maps.app.goo.gl/NU331m5qrYJ6Wtk16?g_st=aw';
 const STATIC_PAYMENT_QR = 'imagenes/QROFICIAL.jpeg';
 let activeCustomer = null;
 
@@ -343,7 +344,8 @@ function manualPaymentDetail(method, amount = 0) {
     'Pago en efectivo': {
       icon: 'fa-money-bill-wave',
       title: 'Pago en efectivo',
-      text: CASH_PAYMENT_ADDRESS
+      text: CASH_PAYMENT_ADDRESS,
+      mapUrl: CASH_PAYMENT_MAP
     }
   };
   return details[method] || details['Transferencia bancaria'];
@@ -364,6 +366,11 @@ function renderManualPaymentDetail(method, amount = 0) {
           <small>A nombre de</small>
           <b>${detail.accountHolder}</b>
         </div>
+      ` : ''}
+      ${detail.mapUrl ? `
+        <a class="btn light cash-location-link" href="${detail.mapUrl}" target="_blank" rel="noopener">
+          <i class="fas fa-location-dot"></i> Ver ubicación en Google Maps
+        </a>
       ` : ''}
       ${detail.image ? `
         <figure class="qr-payment-visual">
@@ -606,10 +613,16 @@ function renderCustomer(customer) {
             <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
           </fieldset>
           <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
-          <label class="receipt-file-picker">
-            <input name="receiptFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required/>
-            <span><i class="fas fa-camera"></i><strong>Tomar foto o elegir comprobante</strong><small>Acepta capturas y fotos de comprobantes impresos; deben verse completos y nítidos.</small></span>
-          </label>
+          <div class="receipt-source-options" aria-label="Elegir origen del comprobante">
+            <label class="receipt-file-picker">
+              <input name="receiptCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment"/>
+              <span><i class="fas fa-camera"></i><strong>Abrir cámara</strong><small>Tomar una foto ahora.</small></span>
+            </label>
+            <label class="receipt-file-picker">
+              <input name="receiptFile" type="file" accept="image/jpeg,image/png,image/webp"/>
+              <span><i class="fas fa-folder-open"></i><strong>Galería o archivos</strong><small>Elegir una imagen guardada.</small></span>
+            </label>
+          </div>
           <div class="receipt-file-preview" data-receipt-file-preview hidden></div>
           <button class="btn primary full" type="submit" data-receipt-submit><i class="fas fa-cloud-arrow-up"></i> Ya pagué</button>
           <div data-receipt-upload-result aria-live="polite"></div>
@@ -672,11 +685,16 @@ document.addEventListener('change', event => {
 });
 
 document.addEventListener('change', event => {
-  const input = event.target.closest('input[name="receiptFile"]');
+  const input = event.target.closest('input[name="receiptFile"], input[name="receiptCamera"]');
   if (!input) return;
-  const preview = input.closest('form')?.querySelector('[data-receipt-file-preview]');
+  const form = input.closest('form');
+  const alternative = form?.querySelector(input.name === 'receiptCamera'
+    ? 'input[name="receiptFile"]'
+    : 'input[name="receiptCamera"]');
+  const preview = form?.querySelector('[data-receipt-file-preview]');
   const file = input.files?.[0];
   if (!preview || !file) return;
+  if (alternative) alternative.value = '';
   const url = URL.createObjectURL(file);
   preview.hidden = false;
   preview.innerHTML = `<img src="${url}" alt="Vista previa del comprobante"/><span>${escapeHtml(file.name)} · ${(file.size / 1024 / 1024).toFixed(1)} MB</span>`;
@@ -689,7 +707,8 @@ document.addEventListener('submit', async event => {
   event.preventDefault();
 
   const formData = new FormData(form);
-  const file = formData.get('receiptFile');
+  const file = form.querySelector('input[name="receiptCamera"]')?.files?.[0]
+    || form.querySelector('input[name="receiptFile"]')?.files?.[0];
   const button = form.querySelector('[data-receipt-submit]');
   const result = form.querySelector('[data-receipt-upload-result]');
   const originalButton = button?.innerHTML;
@@ -699,6 +718,7 @@ document.addEventListener('submit', async event => {
   }
   if (result) result.innerHTML = '';
   try {
+    if (!file) throw new Error('Abre la cámara o elige una imagen de tu galería o archivos.');
     const receiptDataUrl = await compressReceiptImage(file);
     const response = await fetch('/api/qr-create?mode=receipt-upload', {
       method: 'POST',
@@ -715,6 +735,7 @@ document.addEventListener('submit', async event => {
     if (!response.ok) throw new Error(data.error || 'No se pudo enviar el comprobante.');
     if (result) result.innerHTML = renderUploadResult(data.receipt, data.customerName, data.customerCi, receiptDataUrl);
     form.querySelector('input[name="receiptFile"]').value = '';
+    form.querySelector('input[name="receiptCamera"]').value = '';
     if (activeCustomer) {
       activeCustomer.comprobantes = [data.receipt, ...(activeCustomer.comprobantes || []).filter(item => item.id !== data.receipt.id)];
     }
