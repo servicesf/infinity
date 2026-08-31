@@ -337,9 +337,9 @@ function manualPaymentDetail(method, amount = 0) {
     },
     'QR bancario estatico': {
       icon: 'fa-qrcode',
-      title: qrMatchesAmount ? 'Paga con YaSta por QR' : 'QR bancario de Bs. 149',
+      title: qrMatchesAmount ? 'QR bancario' : 'QR bancario de Bs. 149',
       text: qrMatchesAmount
-        ? 'Escanea el QR, realiza el pago y sube tu comprobante. Lo revisaremos para recargar tu servicio.'
+        ? 'Escanea el QR, realiza el pago y sube tu comprobante. La recarga puede demorar hasta 10 minutos.'
         : `Este QR cobra Bs. 149 y tu mensualidad es Bs. ${paymentAmount || 0}. Elige otro metodo o consulta por WhatsApp.`,
       image: qrMatchesAmount ? STATIC_PAYMENT_QR : ''
     },
@@ -586,8 +586,7 @@ function renderCustomer(customer) {
       <section class="manual-payment" aria-labelledby="manualPaymentTitle">
         <div class="manual-payment-heading">
           <div>
-            <span>Pago manual</span>
-            <h3 id="manualPaymentTitle">Elige como quieres pagar</h3>
+            <h3 id="manualPaymentTitle">Métodos de pago</h3>
           </div>
           <span class="review-chip"><i class="fas fa-shield-halved"></i> Revisión rápida</span>
         </div>
