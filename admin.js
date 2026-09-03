@@ -60,10 +60,34 @@ const incomeGrid = document.getElementById('incomeGrid');
 const toolsMenu = document.querySelector('.tools-menu');
 const toolsMenuBtn = document.getElementById('toolsMenuBtn');
 const chartDialog = document.getElementById('chartDialog');
-const incomeFrom = document.getElementById('incomeFrom');
-const incomeTo = document.getElementById('incomeTo');
+const incomeMonth = document.getElementById('incomeMonth');
 const sectorToggleBtn = document.getElementById('sectorToggleBtn');
 const sectorPicker = document.getElementById('sectorPicker');
+
+function monthValue(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/La_Paz',
+    year: 'numeric',
+    month: '2-digit'
+  }).formatToParts(date);
+  const year = parts.find(part => part.type === 'year')?.value;
+  const month = parts.find(part => part.type === 'month')?.value;
+  return `${year}-${month}`;
+}
+
+function paymentMonth(payment) {
+  const date = new Date(payment.paid_at || payment.created_at || '');
+  return Number.isNaN(date.getTime()) ? '' : monthValue(date);
+}
+
+function formatMonth(value) {
+  if (!/^\d{4}-\d{2}$/.test(value)) return 'Este mes';
+  const date = new Date(`${value}-01T12:00:00`);
+  const label = date.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' });
+  return `${label.charAt(0).toLocaleUpperCase('es')}${label.slice(1)}`;
+}
+
+incomeMonth.value = monthValue();
 
 function setLoggedIn(loggedIn) {
   state.authenticated = loggedIn;
@@ -255,35 +279,34 @@ function syncStatFilterState() {
 }
 
 function renderIncome() {
-  const from = incomeFrom.value;
-  const to = incomeTo.value;
-  const confirmed = state.payments.filter(payment => {
-    if (payment.status !== 'confirmado') return false;
-    const date = String(payment.paid_at || '').slice(0, 10);
-    return (!from || date >= from) && (!to || date <= to);
-  });
+  const selectedMonth = incomeMonth.value || monthValue();
+  if (!incomeMonth.value) incomeMonth.value = selectedMonth;
+  const confirmed = state.payments
+    .filter(payment => payment.status === 'confirmado' && paymentMonth(payment) === selectedMonth)
+    .sort((a, b) => new Date(b.paid_at || b.created_at) - new Date(a.paid_at || a.created_at));
   const total = confirmed.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-  const byMonth = new Map();
-  for (const payment of confirmed) {
-    const key = String(payment.paid_at || '').slice(0, 7) || 'Sin fecha';
-    byMonth.set(key, (byMonth.get(key) || 0) + Number(payment.amount || 0));
-  }
-  const max = Math.max(...byMonth.values(), 1);
-  const monthFormatter = new Intl.DateTimeFormat('es-BO', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const monthLabel = formatMonth(selectedMonth);
   document.getElementById('incomeTotal').textContent = formatMoney(total);
-  document.getElementById('incomePaymentCount').textContent = `${confirmed.length} pagos confirmados`;
-  incomeGrid.innerHTML = Array.from(byMonth.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([label, amount]) => {
-      const date = /^\d{4}-\d{2}$/.test(label) ? new Date(`${label}-01T00:00:00Z`) : null;
-      const monthLabel = date ? monthFormatter.format(date) : label;
-      return `
-        <div class="chart-row">
-          <span>${monthLabel}</span>
-          <div class="chart-track"><i class="chart-bar" style="width:${Math.max(4, (amount / max) * 100)}%"></i></div>
-          <strong>${formatMoney(amount)}</strong>
-        </div>`;
-    }).join('') || '<div class="income-empty"><strong>Sin pagos</strong><span>No hay datos confirmados en este período.</span></div>';
+  document.getElementById('incomePaymentCount').textContent = confirmed.length === 1
+    ? '1 pago confirmado'
+    : `${confirmed.length} pagos confirmados`;
+  document.getElementById('incomePeriodLabel').textContent = `Ganancias de ${monthLabel}`;
+  document.getElementById('incomeHistoryTitle').textContent = `Pagos de ${monthLabel}`;
+  incomeGrid.innerHTML = confirmed.map(payment => {
+    const customer = receiptCustomer(payment);
+    return `
+      <article class="income-history-item">
+        <div class="income-history-person">
+          <strong>${escapeHtml(formatPersonName(customer?.nombre || 'Cliente eliminado'))}</strong>
+          <span>${escapeHtml(formatCi(customer?.ci))}</span>
+        </div>
+        <div class="income-history-payment">
+          <strong>${formatMoney(payment.amount)}</strong>
+          <span>${formatDateTime(payment.paid_at || payment.created_at)}</span>
+          <small>${escapeHtml(payment.method || 'manual')}</small>
+        </div>
+      </article>`;
+  }).join('') || '<div class="income-empty"><strong>Sin pagos</strong><span>No hay pagos confirmados en este mes.</span></div>';
 }
 
 function receiptCustomer(payment) {
@@ -863,11 +886,9 @@ sectorPicker.addEventListener('click', event => {
   document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
-incomeFrom.addEventListener('change', renderIncome);
-incomeTo.addEventListener('change', renderIncome);
-document.getElementById('incomeResetBtn').addEventListener('click', () => {
-  incomeFrom.value = '';
-  incomeTo.value = '';
+incomeMonth.addEventListener('change', renderIncome);
+document.getElementById('incomeCurrentMonthBtn').addEventListener('click', () => {
+  incomeMonth.value = monthValue();
   renderIncome();
 });
 document.getElementById('closeChartBtn').addEventListener('click', () => chartDialog.close());

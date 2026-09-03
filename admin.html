@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=14"/>
+  <link rel="stylesheet" href="admin.css?v=15"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -54,8 +54,8 @@
             <span><strong>Nuevo cliente</strong><small>Registrar una instalación</small></span>
           </button>
           <button class="tool-item" type="button" id="chartBtn">
-            <i class="fas fa-chart-column"></i>
-            <span><strong>Gráfico</strong><small>Ganancias por período</small></span>
+            <i class="fas fa-list-check"></i>
+            <span><strong>Historial</strong><small>Pagos y ganancias por mes</small></span>
           </button>
           <button class="tool-item" type="button" id="receiptHistoryBtn">
             <i class="fas fa-clock-rotate-left"></i>
@@ -174,27 +174,26 @@
     <div class="chart-dialog-content">
       <div class="dialog-head">
         <div>
-          <h3>Gráfico de ganancias</h3>
-          <p>Todos los meses por defecto.</p>
+          <h3>Historial de pagos</h3>
+          <p>Consulta las ganancias y pagos de cada mes.</p>
         </div>
         <button type="button" id="closeChartBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
       </div>
       <div class="chart-period">
         <div class="form-row">
-          <label for="incomeFrom">Desde</label>
-          <input id="incomeFrom" type="date"/>
+          <label for="incomeMonth">Mes</label>
+          <input id="incomeMonth" type="month"/>
         </div>
-        <div class="form-row">
-          <label for="incomeTo">Hasta</label>
-          <input id="incomeTo" type="date"/>
-        </div>
-        <button class="mini-btn" type="button" id="incomeResetBtn">Todos los meses</button>
+        <button class="mini-btn" type="button" id="incomeCurrentMonthBtn">Mes actual</button>
       </div>
       <section class="chart-total" aria-live="polite">
-        <span>Total de ganancias</span>
+        <span id="incomePeriodLabel">Ganancias del mes</span>
         <strong id="incomeTotal">Bs. 0</strong>
         <small id="incomePaymentCount">0 pagos confirmados</small>
       </section>
+      <div class="income-history-head">
+        <h4 id="incomeHistoryTitle">Pagos del mes</h4>
+      </div>
       <div class="income-chart" id="incomeGrid"></div>
     </div>
   </dialog>
@@ -348,6 +347,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=16"></script>
+  <script src="admin.js?v=17"></script>
 </body>
 </html>
