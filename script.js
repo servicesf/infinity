@@ -464,24 +464,6 @@ function renderReceiptChecks(receipt) {
   }).join('');
 }
 
-function renderReportedReceipts(receipts = []) {
-  if (!receipts.length) return '';
-  return `
-    <section class="reported-receipts" aria-labelledby="reportedReceiptsTitle">
-      <h3 id="reportedReceiptsTitle">Comprobantes enviados</h3>
-      ${receipts.map(receipt => `
-        <article class="reported-receipt ${escapeHtml(receipt.status)}">
-          <div>
-            <strong>Bs. ${escapeHtml(receipt.amount)}</strong>
-            <span>${escapeHtml(receiptStatusLabel(receipt))} · ${formatDateTime(receipt.createdAt)}</span>
-          </div>
-          <button class="mini-action" type="button" data-public-receipt-id="${escapeHtml(receipt.id)}"><i class="fas fa-image"></i> Ver foto</button>
-        </article>
-      `).join('')}
-    </section>
-  `;
-}
-
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -591,7 +573,6 @@ function renderCustomer(customer) {
           <div><span>${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}</span><strong>Bs. ${escapeHtml(payment.monto)}</strong></div>
         `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
-      ${renderReportedReceipts(customer.comprobantes || [])}
       <section class="manual-payment" aria-labelledby="manualPaymentTitle">
         <div class="manual-payment-heading">
           <div>
@@ -747,30 +728,6 @@ document.addEventListener('submit', async event => {
       button.innerHTML = originalButton;
     }
   }
-});
-
-document.addEventListener('click', async event => {
-  const button = event.target.closest('[data-public-receipt-id]');
-  if (!button || !activeCustomer?.ci) return;
-  button.disabled = true;
-  try {
-    const response = await fetch(`/api/qr-create?mode=receipt-view&id=${encodeURIComponent(button.dataset.publicReceiptId)}&ci=${encodeURIComponent(activeCustomer.ci)}`);
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'No se pudo abrir la imagen.');
-    const dialog = document.getElementById('publicReceiptDialog');
-    document.getElementById('publicReceiptImage').src = data.imageUrl;
-    dialog?.showModal();
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    button.disabled = false;
-  }
-});
-
-document.getElementById('closePublicReceiptBtn')?.addEventListener('click', () => {
-  const dialog = document.getElementById('publicReceiptDialog');
-  dialog?.close();
-  document.getElementById('publicReceiptImage').removeAttribute('src');
 });
 
 const cart = {
