@@ -17,7 +17,7 @@ function loadEnvFile(filePath) {
   }
 }
 
-loadEnvFile(path.resolve(process.cwd(), '.env.import'));
+loadEnvFile(process.env.IMPORT_ENV_FILE || path.resolve(process.cwd(), '.env.import'));
 
 const config = {
   mikrotikHost: process.env.MIKROTIK_HOST,
@@ -625,6 +625,9 @@ async function main() {
       const missingEnabled = missingItems.filter(item => !isRouterItemDisabled(item)
         && !(config.importSource === 'queues' && isQueueCut(item))).length;
       console.log(`Faltantes en Supabase: ${missingItems.length} | activos: ${missingEnabled} | cortados: ${missingItems.length - missingEnabled}`);
+      if (missingItems.length) {
+        console.log(`Cuentas faltantes: ${missingItems.map(item => String(item.name || '').trim()).join(', ')}`);
+      }
     }
     console.log('Modo prueba: no se escribio nada en Supabase.');
     return;
