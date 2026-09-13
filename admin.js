@@ -919,7 +919,7 @@ els.tbody.addEventListener('click', event => {
   renderDetail();
 });
 
-els.detail.addEventListener('click', event => {
+els.detail.addEventListener('click', async event => {
   const button = event.target.closest('[data-detail-action]');
   if (!button) return;
   const action = button.dataset.detailAction;
@@ -928,8 +928,16 @@ els.detail.addEventListener('click', event => {
 
   if (action === 'update-ci') return openCiDialog(client);
   if (action === 'schedule-cut') return openScheduleDialog(client);
-  if (action === 'delete') return deleteSelectedClient(client).catch(error => alert(error.message));
-  return performAction(action).catch(error => alert(error.message));
+
+  button.disabled = true;
+  try {
+    if (action === 'delete') await deleteSelectedClient(client);
+    else await performAction(action);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    if (button.isConnected) button.disabled = false;
+  }
 });
 
 window.addEventListener('beforeinstallprompt', event => {

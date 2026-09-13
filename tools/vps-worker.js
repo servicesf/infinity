@@ -216,6 +216,22 @@ function normalizeRateLimit(value = '') {
   return String(value || '').toLowerCase().replace(/\s+/g, '');
 }
 
+function normalizeIdentity(value = '') {
+  return String(value || '').trim().toLocaleLowerCase('es');
+}
+
+function queueLimitFromPlan(planName = '') {
+  const speed = Number(String(planName).match(/(\d+)\s*(?:mb|mbps)/i)?.[1] || 0);
+  const knownLimits = new Map([
+    [10, '5M/10M'],
+    [25, '12M/25M'],
+    [50, '15M/50M'],
+    [100, '30M/100M'],
+    [200, '60M/200M']
+  ]);
+  return knownLimits.get(speed) || '';
+}
+
 function isQueueCut(queue) {
   const maxLimit = normalizeRateLimit(queue?.['max-limit']);
   return maxLimit === '10k/10k'
@@ -227,11 +243,6 @@ function isQueueCut(queue) {
 function isRouterItemDisabled(item) {
   const value = String(item?.disabled ?? '').trim().toLowerCase();
   return item?.disabled === true || value === 'true' || value === 'yes' || value === '1';
-}
-
-function appendLimitMarker(comment = '', maxLimit = '') {
-  const clean = String(comment || '').replace(/\s*\[infinit-max-limit=[^\]]+\]/g, '').trim();
-  return `${clean ? `${clean} ` : ''}[infinit-max-limit=${maxLimit || '0/0'}]`;
 }
 
 function extractLimitMarker(comment = '') {
@@ -381,32 +392,43 @@ function getRadiusUserEnabled(username) {
 }
 
 async function findQueueItems(api, name) {
-  if (!name) return [];
+  const cleanName = String(name || '').trim();
+  if (!cleanName) return [];
   const replies = await api.talk([
     '/queue/simple/print',
-    `?name=${name}`,
+    `?name=${cleanName}`,
     '=.proplist=.id,name,disabled,max-limit,comment,target'
   ]);
-  return replies.map(parseSentence).filter(item => item['.id']);
+  const exact = replies.map(parseSentence).filter(item => item['.id']);
+  if (exact.length) return exact;
+
+  // Algunos registros antiguos quedaron con espacios o mayusculas diferentes.
+  // La busqueda normalizada evita perder una recarga por esa diferencia visual.
+  const allReplies = await api.talk([
+    '/queue/simple/print',
+    '=.proplist=.id,name,disabled,max-limit,comment,target'
+  ]);
+  const normalizedName = normalizeIdentity(cleanName);
+  return allReplies
+    .map(parseSentence)
+    .filter(item => item['.id'] && normalizeIdentity(item.name) === normalizedName);
 }
 
 async function cutQueueBySpeed(api, queueItems) {
   for (const queueItem of queueItems) {
-    const originalLimit = extractLimitMarker(queueItem.comment) || queueItem['max-limit'];
-    const comment = appendLimitMarker(queueItem.comment, originalLimit);
     await api.talk([
       '/queue/simple/set',
       `=.id=${queueItem['.id']}`,
       '=disabled=false',
       `=max-limit=${config.queueCutLimit}`,
-      `=comment=${comment}`
+      `=comment=${removeLimitMarker(queueItem.comment)}`
     ]);
   }
 }
 
-async function restoreQueueSpeed(api, queueItems) {
+async function restoreQueueSpeed(api, queueItems, planName) {
   for (const queueItem of queueItems) {
-    const originalLimit = extractLimitMarker(queueItem.comment);
+    const originalLimit = extractLimitMarker(queueItem.comment) || queueLimitFromPlan(planName);
     const words = [
       '/queue/simple/set',
       `=.id=${queueItem['.id']}`,
@@ -419,8 +441,8 @@ async function restoreQueueSpeed(api, queueItems) {
 }
 
 async function runCommand(router, action, payload) {
-  const pppoe = payload.pppoe;
-  const queue = payload.queue || pppoe;
+  const pppoe = String(payload.pppoe || '').trim() || null;
+  const queue = String(payload.queue || pppoe || '').trim() || null;
   const target = pppoe || queue;
   const radiusManaged = isRadiusManagedAccount(router, pppoe);
   if (!target) throw new Error('Accion sin PPPoE ni queue.');
@@ -466,7 +488,7 @@ async function runCommand(router, action, payload) {
         return;
       }
       for (const id of secretIds) await api.talk(['/ppp/secret/enable', `=.id=${id}`]);
-      await restoreQueueSpeed(api, queueItems);
+      await restoreQueueSpeed(api, queueItems, payload.plan_name);
       return;
     }
 
@@ -491,7 +513,7 @@ async function processPendingActions() {
 
       await supabase(`router_actions?id=eq.${action.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: 'running' })
+        body: JSON.stringify({ status: 'running', processed_at: new Date().toISOString() })
       });
       const result = await runCommand(action.routers, action.action, action.payload || {});
       if (result?.skipped) continue;
@@ -500,11 +522,26 @@ async function processPendingActions() {
         body: JSON.stringify({ status: 'done', processed_at: new Date().toISOString(), error: null })
       });
     } catch (error) {
-      await supabase(`router_actions?id=eq.${action.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'error', processed_at: new Date().toISOString(), error: error.message })
-      });
-      console.error(`Accion ${action.id} fallo: ${error.message}`);
+      const attempts = Number(action.payload?.worker_attempts || 0) + 1;
+      const retryable = /tiempo agotado|timed?\s*out|econnreset|econnrefused|socket|network/i.test(error.message);
+      if (retryable && attempts < 4) {
+        await supabase(`router_actions?id=eq.${action.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            status: 'pending',
+            processed_at: null,
+            error: `Intento ${attempts}/4: ${error.message}`,
+            payload: { ...(action.payload || {}), worker_attempts: attempts }
+          })
+        });
+        console.warn(`Accion ${action.id} se reintentara (${attempts}/4): ${error.message}`);
+      } else {
+        await supabase(`router_actions?id=eq.${action.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'error', processed_at: new Date().toISOString(), error: error.message })
+        });
+        console.error(`Accion ${action.id} fallo definitivamente: ${error.message}`);
+      }
     }
   }
 }
@@ -521,7 +558,8 @@ async function processExpiredCustomers() {
       const result = await runCommand(customer.routers, 'cut', {
         pppoe: customer.pppoe_user,
         queue: customer.queue_name || customer.pppoe_user,
-        ip: customer.ip_address
+        ip: customer.ip_address,
+        plan_name: customer.plan_name
       });
       if (result?.skipped) continue;
       if (config.dryRun) continue;
@@ -560,9 +598,21 @@ async function listRouterQueues(router) {
   try {
     const replies = await api.talk([
       '/queue/simple/print',
-      '=.proplist=name,disabled,target,max-limit'
+      '=.proplist=.id,name,disabled,target,max-limit,comment'
     ]);
-    return replies.map(parseSentence).filter(item => item.name);
+    const queues = replies.map(parseSentence).filter(item => item.name);
+    for (const queue of queues) {
+      const cleanComment = removeLimitMarker(queue.comment);
+      if (cleanComment === String(queue.comment || '').trim()) continue;
+      await api.talk([
+        '/queue/simple/set',
+        `=.id=${queue['.id']}`,
+        `=comment=${cleanComment}`
+      ]);
+      queue.comment = cleanComment;
+      console.log(`Comentario tecnico retirado de queue: ${queue.name}`);
+    }
+    return queues;
   } finally {
     api.close();
   }
@@ -572,7 +622,7 @@ async function syncRouterFromWinbox(router) {
   const secrets = await listRouterSecrets(router);
   const queues = await listRouterQueues(router);
   const secretByName = new Map(secrets.map(secret => [secret.name, secret]));
-  const queueByName = new Map(queues.map(queue => [queue.name, queue]));
+  const queueByName = new Map(queues.map(queue => [normalizeIdentity(queue.name), queue]));
   const customers = await supabase(
     `customers?select=*&router_id=eq.${router.id}`,
     { method: 'GET', prefer: '' }
@@ -582,7 +632,7 @@ async function syncRouterFromWinbox(router) {
     const radiusManaged = isRadiusManagedAccount(router, customer.pppoe_user);
     const radiusEnabled = radiusManaged ? getRadiusUserEnabled(customer.pppoe_user) : null;
     const secret = customer.pppoe_user ? secretByName.get(customer.pppoe_user) : null;
-    const queue = customer.queue_name ? queueByName.get(customer.queue_name) : null;
+    const queue = customer.queue_name ? queueByName.get(normalizeIdentity(customer.queue_name)) : null;
     const deviceItem = secret || queue;
     const target = customer.pppoe_user || customer.queue_name;
     if (!target) continue;
@@ -596,14 +646,23 @@ async function syncRouterFromWinbox(router) {
   const mikrotikEnabled = radiusManaged
     ? radiusEnabled
     : !isRouterItemDisabled(deviceItem) && !isQueueCut(deviceItem);
-    const panelCut = customer.status === 'cortado' || customer.status === 'vencido';
+    const panelCut = customer.status === 'cortado' && !customer.paid_until;
 
     if (config.syncWinboxRecharges && mikrotikEnabled && panelCut) {
-      const paidUntil = addDaysWithHours(new Date().toISOString());
       if (config.dryRun) {
-        console.log(`[DRY_RUN] Recarga WinBox detectada: ${target} hasta ${paidUntil}`);
+        console.log(`[DRY_RUN] Posible recarga WinBox detectada: ${target}`);
         continue;
       }
+
+      // La lectura inicial puede quedar vieja mientras una recarga del panel se
+      // procesa. Se confirma nuevamente el estado para no registrar dos pagos.
+      const currentRows = await supabase(
+        `customers?select=status,paid_until&id=eq.${customer.id}&limit=1`,
+        { method: 'GET', prefer: '' }
+      );
+      const current = currentRows?.[0];
+      if (!current || current.status !== 'cortado' || current.paid_until) continue;
+      const paidUntil = addDaysWithHours(new Date().toISOString());
 
       await supabase('payments', {
         method: 'POST',
@@ -665,9 +724,32 @@ async function syncWinboxChanges() {
 }
 
 async function tick() {
+  const staleBefore = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  await supabase(
+    `router_actions?status=eq.running&processed_at=lt.${encodeURIComponent(staleBefore)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'pending', processed_at: null, error: 'Reintentando accion interrumpida.' })
+    }
+  );
   await processPendingActions();
   await processExpiredCustomers();
   await syncWinboxChanges();
+}
+
+let tickRunning = false;
+
+async function guardedTick() {
+  if (tickRunning) {
+    console.warn('Ciclo omitido: el ciclo anterior todavia esta trabajando.');
+    return;
+  }
+  tickRunning = true;
+  try {
+    await tick();
+  } finally {
+    tickRunning = false;
+  }
 }
 
 async function main() {
@@ -676,8 +758,8 @@ async function main() {
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
   console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} QUEUE_CUT_LIMIT=${config.queueCutLimit} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
-  await tick();
-  setInterval(() => tick().catch(error => console.error(error.message)), config.intervalMs);
+  await guardedTick();
+  setInterval(() => guardedTick().catch(error => console.error(error.message)), config.intervalMs);
 }
 
 main().catch(error => {

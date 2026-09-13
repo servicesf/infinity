@@ -1,8 +1,8 @@
-const STATIC_CACHE = 'infinit-panel-v1';
+const STATIC_CACHE = 'infinit-panel-v2';
 const STATIC_ASSETS = [
   '/admin.html',
-  '/admin.css?v=12',
-  '/admin.js?v=14',
+  '/admin.css?v=15',
+  '/admin.js?v=18',
   '/imagenes/favicon-infinit.svg'
 ];
 

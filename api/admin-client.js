@@ -2,16 +2,17 @@ import { requireAdmin } from './_adminAuth.js';
 import { supabaseFetch } from './_supabase.js';
 
 function payloadToRow(payload) {
+  const clean = value => String(value || '').trim() || null;
   const row = {
-    full_name: payload.nombre,
-    ci: payload.ci,
-    phone: payload.telefono || null,
+    full_name: clean(payload.nombre),
+    ci: clean(payload.ci),
+    phone: clean(payload.telefono),
     sector: payload.sector || 'fibra',
-    plan_name: payload.plan,
+    plan_name: clean(payload.plan),
     monthly_price: Number(payload.precio || 0),
-    pppoe_user: payload.pppoe || null,
-    queue_name: payload.queue || null,
-    ip_address: payload.ip || null,
+    pppoe_user: clean(payload.pppoe),
+    queue_name: clean(payload.queue),
+    ip_address: clean(payload.ip),
     status: payload.estado || 'activo',
     paid_until: payload.dueAt || payload.pagadoHasta || null,
     auto_cut_enabled: payload.autoCutEnabled !== false,

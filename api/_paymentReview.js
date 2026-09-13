@@ -38,6 +38,7 @@ async function queuePaymentOnce(customer, paymentId, paidUntil) {
         pppoe: customer.pppoe_user,
         queue: customer.queue_name || customer.pppoe_user,
         ip: customer.ip_address,
+        plan_name: customer.plan_name,
         paid_until: paidUntil,
         payment_id: paymentId,
         source: 'admin-receipt'

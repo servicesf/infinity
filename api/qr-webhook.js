@@ -98,6 +98,7 @@ export default async function handler(req, res) {
           pppoe: customer?.pppoe_user || null,
           queue: customer?.queue_name || customer?.pppoe_user || null,
           ip: customer?.ip_address || null,
+          plan_name: customer?.plan_name || null,
           payment_id: payment.id,
           paid_until: paidUntil,
           amount: payment.amount,
