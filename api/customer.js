@@ -1,5 +1,4 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
-import { publicReceipt } from './_receipt.js';
 
 function normalizeCustomer(row, payments = []) {
   const isCut = row.status === 'cortado';
@@ -22,11 +21,7 @@ function normalizeCustomer(row, payments = []) {
       metodo: payment.method,
       estado: payment.status,
       referencia: payment.reference
-    })),
-    comprobantes: payments
-      .filter(payment => payment.qr_payload?.source === 'customer-receipt')
-      .slice(0, 5)
-      .map(publicReceipt)
+    }))
   };
 }
 

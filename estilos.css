@@ -2224,6 +2224,26 @@ body.modal-open {
   gap: 13px;
 }
 
+.payment-whatsapp-btn {
+  min-height: 52px;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 12px 28px rgba(37, 211, 102, 0.24);
+}
+
+.payment-whatsapp-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.payment-whatsapp-help i {
+  margin-top: 3px;
+  color: #20a957;
+}
+
 .customer-payment-methods {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

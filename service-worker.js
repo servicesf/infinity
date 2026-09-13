@@ -1,8 +1,8 @@
-const STATIC_CACHE = 'infinit-panel-v2';
+const STATIC_CACHE = 'infinit-panel-v3';
 const STATIC_ASSETS = [
   '/admin.html',
-  '/admin.css?v=15',
-  '/admin.js?v=18',
+  '/admin.css?v=16',
+  '/admin.js?v=19',
   '/imagenes/favicon-infinit.svg'
 ];
 
@@ -22,30 +22,4 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-});
-
-self.addEventListener('push', event => {
-  let data = {};
-  try { data = event.data?.json() || {}; } catch { data = {}; }
-  event.waitUntil(self.registration.showNotification(data.title || 'Infinit', {
-    body: data.body || 'Tienes un comprobante pendiente por revisar.',
-    icon: '/imagenes/favicon-infinit.svg',
-    badge: '/imagenes/favicon-infinit.svg',
-    tag: 'infinit-receipt',
-    renotify: true,
-    data: { url: data.url || '/admin.html#receiptInbox' }
-  }));
-});
-
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  const target = event.notification.data?.url || '/admin.html#receiptInbox';
-  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
-    const existing = clients.find(client => new URL(client.url).pathname === '/admin.html');
-    if (existing) {
-      existing.navigate(target);
-      return existing.focus();
-    }
-    return self.clients.openWindow(target);
-  }));
 });

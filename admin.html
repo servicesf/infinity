@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="stylesheet" href="estilos.css"/>
-  <link rel="stylesheet" href="admin.css?v=15"/>
+  <link rel="stylesheet" href="admin.css?v=16"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -57,17 +57,9 @@
             <i class="fas fa-list-check"></i>
             <span><strong>Historial</strong><small>Pagos y ganancias por mes</small></span>
           </button>
-          <button class="tool-item" type="button" id="receiptHistoryBtn">
-            <i class="fas fa-clock-rotate-left"></i>
-            <span><strong>Historial de comprobantes</strong><small>Ver pagos enviados y revisados</small></span>
-          </button>
           <button class="tool-item" type="button" id="exportBtn">
             <i class="fas fa-file-export"></i>
             <span><strong>Exportar respaldo</strong><small>Descargar clientes en JSON</small></span>
-          </button>
-          <button class="tool-item" type="button" id="enableNotificationsBtn">
-            <i class="fas fa-bell"></i>
-            <span><strong>Activar avisos</strong><small>Notificar comprobantes nuevos</small></span>
           </button>
           <button class="tool-item" type="button" id="installAppBtn">
             <i class="fas fa-mobile-screen-button"></i>
@@ -107,14 +99,6 @@
       </div>
     </section>
 
-    <section class="receipt-inbox" id="receiptInbox" aria-labelledby="receiptInboxTitle">
-      <div class="receipt-inbox-head">
-        <h2 id="receiptInboxTitle">Comprobantes por revisar</h2>
-        <strong class="inbox-count" id="pendingReceiptCount">0</strong>
-      </div>
-      <div class="receipt-inbox-list" id="receiptInboxList"></div>
-    </section>
-
     <section class="admin-panel">
       <div class="panel-head">
         <div>
@@ -139,36 +123,6 @@
       </div>
     </section>
   </main>
-
-  <dialog class="client-dialog receipt-review-dialog" id="receiptDialog">
-    <div class="receipt-review-content">
-      <div class="dialog-head">
-        <div>
-          <h3>Revisar comprobante</h3>
-          <p id="receiptDialogSubtitle">Pago pendiente</p>
-        </div>
-        <button type="button" id="closeReceiptBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="receipt-review-body" id="receiptReviewBody"></div>
-      <div class="receipt-review-actions" id="receiptReviewActions">
-        <button class="btn danger" type="button" id="rejectReceiptBtn"><i class="fas fa-xmark"></i> Rechazar</button>
-        <button class="btn primary" type="button" id="confirmReceiptBtn"><i class="fas fa-check"></i> Confirmar pago</button>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog class="client-dialog receipt-history-dialog" id="receiptHistoryDialog">
-    <div class="receipt-history-content">
-      <div class="dialog-head">
-        <div>
-          <h3>Historial de comprobantes</h3>
-          <p>Comprobantes enviados por los clientes.</p>
-        </div>
-        <button type="button" id="closeReceiptHistoryBtn" aria-label="Cerrar"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="receipt-history-list" id="receiptHistoryList"></div>
-    </div>
-  </dialog>
 
   <dialog class="client-dialog chart-dialog" id="chartDialog">
     <div class="chart-dialog-content">
@@ -347,6 +301,6 @@
     </form>
   </dialog>
 
-  <script src="admin.js?v=18"></script>
+  <script src="admin.js?v=19"></script>
 </body>
 </html>
