@@ -375,6 +375,20 @@ async function filterMissingItems(router, items) {
   return items.filter(item => !known.has(String(item.name || '').trim().toLowerCase()));
 }
 
+async function findExtraCustomers(router, items) {
+  const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
+  const rows = await supabase(
+    `customers?select=id,full_name,${identityField},ip_address,status&router_id=eq.${encodeURIComponent(router?.id)}&limit=5000`
+  );
+  const live = new Set(items
+    .map(item => String(item.name || '').trim().toLowerCase())
+    .filter(Boolean));
+  return (rows || []).filter(row => {
+    const identity = String(row[identityField] || '').trim().toLowerCase();
+    return identity && !live.has(identity);
+  });
+}
+
 async function syncCustomerPlans(router, items) {
   const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
   const rows = await supabase(
@@ -622,11 +636,16 @@ async function main() {
     if (missingOnly) {
       const router = await findRouterByCode();
       const missingItems = await filterMissingItems(router, items);
+      const extraCustomers = await findExtraCustomers(router, items);
       const missingEnabled = missingItems.filter(item => !isRouterItemDisabled(item)
         && !(config.importSource === 'queues' && isQueueCut(item))).length;
       console.log(`Faltantes en Supabase: ${missingItems.length} | activos: ${missingEnabled} | cortados: ${missingItems.length - missingEnabled}`);
       if (missingItems.length) {
         console.log(`Cuentas faltantes: ${missingItems.map(item => String(item.name || '').trim()).join(', ')}`);
+      }
+      console.log(`Cuentas del panel que no estan en este MikroTik: ${extraCustomers.length}`);
+      if (extraCustomers.length) {
+        console.log(`Cuentas extras: ${extraCustomers.map(customer => `${customer.full_name} [${customer[config.importSource === 'queues' ? 'queue_name' : 'pppoe_user']}]`).join(', ')}`);
       }
     }
     console.log('Modo prueba: no se escribio nada en Supabase.');
