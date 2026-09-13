@@ -220,6 +220,10 @@ function normalizeIdentity(value = '') {
   return String(value || '').trim().toLocaleLowerCase('es');
 }
 
+function normalizeQueueTarget(value = '') {
+  return String(value || '').trim().replace(/\/32$/, '');
+}
+
 function queueLimitFromPlan(planName = '') {
   const speed = Number(String(planName).match(/(\d+)\s*(?:mb|mbps)/i)?.[1] || 0);
   const knownLimits = new Map([
@@ -391,7 +395,7 @@ function getRadiusUserEnabled(username) {
   return null;
 }
 
-async function findQueueItems(api, name) {
+async function findQueueItems(api, name, ipAddress = '') {
   const cleanName = String(name || '').trim();
   if (!cleanName) return [];
   const replies = await api.talk([
@@ -409,9 +413,13 @@ async function findQueueItems(api, name) {
     '=.proplist=.id,name,disabled,max-limit,comment,target'
   ]);
   const normalizedName = normalizeIdentity(cleanName);
+  const normalizedIp = normalizeQueueTarget(ipAddress);
   return allReplies
     .map(parseSentence)
-    .filter(item => item['.id'] && normalizeIdentity(item.name) === normalizedName);
+    .filter(item => item['.id'] && (
+      normalizeIdentity(item.name) === normalizedName
+      || (normalizedIp && normalizeQueueTarget(item.target) === normalizedIp)
+    ));
 }
 
 async function cutQueueBySpeed(api, queueItems) {
@@ -459,7 +467,7 @@ async function runCommand(router, action, payload) {
   const api = await getMikrotikApi(router);
   try {
     const secretIds = pppoe ? await findIds(api, '/ppp/secret/print', 'name', pppoe) : [];
-    const queueItems = await findQueueItems(api, queue);
+    const queueItems = await findQueueItems(api, queue, payload.ip);
     const queueIds = queueItems.map(item => item['.id']).filter(Boolean);
     if (!radiusManaged && !secretIds.length && !queueItems.length) {
       throw new Error(`No se encontro PPPoE/queue en MikroTik: ${target}`);
