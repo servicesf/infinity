@@ -389,6 +389,39 @@ async function findExtraCustomers(router, items) {
   });
 }
 
+async function auditCustomerMappings(router, items) {
+  const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
+  const rows = await supabase(
+    `customers?select=id,full_name,${identityField},ip_address,status&router_id=eq.${encodeURIComponent(router?.id)}&limit=5000`
+  );
+  const customers = new Map((rows || []).map(row => [
+    String(row[identityField] || '').trim().toLowerCase(),
+    row
+  ]));
+  const statusMismatches = [];
+  const ipMismatches = [];
+
+  for (const item of items) {
+    const identity = String(item.name || '').trim().toLowerCase();
+    const customer = customers.get(identity);
+    if (!customer) continue;
+    const mikrotikCut = isRouterItemDisabled(item)
+      || (config.importSource === 'queues' && isQueueCut(item));
+    const panelCut = customer.status === 'cortado';
+    if (mikrotikCut !== panelCut) statusMismatches.push(String(item.name || '').trim());
+
+    if (config.importSource === 'queues') {
+      const routerIp = cleanQueueTarget(item.target);
+      const panelIp = String(customer.ip_address || '').trim();
+      if (routerIp && panelIp && routerIp !== panelIp) {
+        ipMismatches.push(`${String(item.name || '').trim()} (${panelIp} != ${routerIp})`);
+      }
+    }
+  }
+
+  return { statusMismatches, ipMismatches };
+}
+
 async function syncCustomerPlans(router, items) {
   const identityField = config.importSource === 'queues' ? 'queue_name' : 'pppoe_user';
   const rows = await supabase(
@@ -637,6 +670,7 @@ async function main() {
       const router = await findRouterByCode();
       const missingItems = await filterMissingItems(router, items);
       const extraCustomers = await findExtraCustomers(router, items);
+      const audit = await auditCustomerMappings(router, items);
       const missingEnabled = missingItems.filter(item => !isRouterItemDisabled(item)
         && !(config.importSource === 'queues' && isQueueCut(item))).length;
       console.log(`Faltantes en Supabase: ${missingItems.length} | activos: ${missingEnabled} | cortados: ${missingItems.length - missingEnabled}`);
@@ -647,6 +681,10 @@ async function main() {
       if (extraCustomers.length) {
         console.log(`Cuentas extras: ${extraCustomers.map(customer => `${customer.full_name} [${customer[config.importSource === 'queues' ? 'queue_name' : 'pppoe_user']}]`).join(', ')}`);
       }
+      console.log(`Estados distintos entre panel y MikroTik: ${audit.statusMismatches.length}`);
+      if (audit.statusMismatches.length) console.log(`Revisar estado: ${audit.statusMismatches.join(', ')}`);
+      console.log(`Direcciones IP distintas: ${audit.ipMismatches.length}`);
+      if (audit.ipMismatches.length) console.log(`Revisar IP: ${audit.ipMismatches.join(', ')}`);
     }
     console.log('Modo prueba: no se escribio nada en Supabase.');
     return;
