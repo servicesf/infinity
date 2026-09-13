@@ -737,6 +737,27 @@ async function tick() {
   await syncWinboxChanges();
 }
 
+async function recoverFailedPaymentActions() {
+  const recent = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const actions = await supabase(
+    `router_actions?select=id,payload&status=eq.error&action=eq.payment&created_at=gte.${encodeURIComponent(recent)}&limit=20`,
+    { method: 'GET', prefer: '' }
+  );
+  for (const action of actions || []) {
+    if (!action.payload?.payment_id || action.payload?.worker_recovered) continue;
+    await supabase(`router_actions?id=eq.${action.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status: 'pending',
+        processed_at: null,
+        error: 'Reintentando pago fallido con el worker actualizado.',
+        payload: { ...(action.payload || {}), worker_recovered: true }
+      })
+    });
+    console.log(`Pago fallido recuperado para reintento: ${action.id}`);
+  }
+}
+
 let tickRunning = false;
 
 async function guardedTick() {
@@ -758,6 +779,7 @@ async function main() {
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
   console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} QUEUE_CUT_LIMIT=${config.queueCutLimit} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
+  await recoverFailedPaymentActions();
   await guardedTick();
   setInterval(() => guardedTick().catch(error => console.error(error.message)), config.intervalMs);
 }
