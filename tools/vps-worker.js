@@ -42,6 +42,8 @@ const config = {
   syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
   rechargeDays: Number(process.env.WORKER_RECHARGE_DAYS || 30),
   rechargeHours: Number(process.env.WORKER_RECHARGE_HOURS || 3),
+  routerTimeoutMs: Number(process.env.WORKER_ROUTER_TIMEOUT_MS || 15000),
+  supabaseTimeoutMs: Number(process.env.WORKER_SUPABASE_TIMEOUT_MS || 15000),
   queueCutLimit: String(process.env.WORKER_QUEUE_CUT_LIMIT || '10k/10k').trim(),
   radiusManagedAccounts: new Set(
     String(process.env.RADIUS_MANAGED_ACCOUNTS || '')
@@ -70,17 +72,31 @@ class RouterOsApi {
     this.options = options;
     this.socket = null;
     this.buffer = Buffer.alloc(0);
+    this.failure = null;
+    this.closing = false;
   }
 
   connect() {
     return new Promise((resolve, reject) => {
       const socketOptions = { host: this.options.host, port: this.options.port, rejectUnauthorized: false };
       this.socket = this.options.tls ? tls.connect(socketOptions) : net.connect(socketOptions);
-      this.socket.setTimeout(12000);
-      this.socket.once('connect', resolve);
-      this.socket.once('secureConnect', resolve);
-      this.socket.once('error', reject);
-      this.socket.once('timeout', () => reject(new Error('Tiempo agotado conectando al MikroTik')));
+      this.socket.setTimeout(this.options.timeoutMs);
+      this.socket.once(this.options.tls ? 'secureConnect' : 'connect', resolve);
+      this.socket.on('error', error => {
+        this.failure = error;
+        reject(error);
+      });
+      this.socket.on('timeout', () => {
+        const error = new Error(`Tiempo agotado comunicando con MikroTik ${this.options.host}`);
+        this.failure = error;
+        this.socket.destroy(error);
+        reject(error);
+      });
+      this.socket.on('close', () => {
+        if (!this.closing && !this.failure) {
+          this.failure = new Error(`MikroTik ${this.options.host} cerro la conexion`);
+        }
+      });
       this.socket.on('data', chunk => {
         this.buffer = Buffer.concat([this.buffer, chunk]);
       });
@@ -88,7 +104,8 @@ class RouterOsApi {
   }
 
   close() {
-    if (this.socket) this.socket.end();
+    this.closing = true;
+    if (this.socket) this.socket.destroy();
   }
 
   async login() {
@@ -96,6 +113,9 @@ class RouterOsApi {
   }
 
   writeSentence(words) {
+    if (!this.socket || this.socket.destroyed) {
+      throw this.failure || new Error(`Conexion cerrada con MikroTik ${this.options.host}`);
+    }
     const chunks = [];
     for (const word of words) {
       const data = Buffer.from(String(word));
@@ -105,31 +125,48 @@ class RouterOsApi {
     this.socket.write(Buffer.concat(chunks));
   }
 
+  async waitForBytes(length) {
+    const deadline = Date.now() + this.options.timeoutMs;
+    while (this.buffer.length < length) {
+      if (this.failure) throw this.failure;
+      if (!this.socket || this.socket.destroyed) {
+        throw new Error(`Conexion cerrada con MikroTik ${this.options.host}`);
+      }
+      if (Date.now() >= deadline) {
+        const error = new Error(`Tiempo agotado esperando respuesta de MikroTik ${this.options.host}`);
+        this.failure = error;
+        this.socket.destroy(error);
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+  }
+
   async readWord() {
-    while (this.buffer.length < 1) await new Promise(resolve => setTimeout(resolve, 5));
+    await this.waitForBytes(1);
     const first = this.buffer[0];
     let length = 0;
     let offset = 1;
     if ((first & 0x80) === 0x00) {
       length = first;
     } else if ((first & 0xc0) === 0x80) {
-      while (this.buffer.length < 2) await new Promise(resolve => setTimeout(resolve, 5));
+      await this.waitForBytes(2);
       length = ((first & ~0xc0) << 8) + this.buffer[1];
       offset = 2;
     } else if ((first & 0xe0) === 0xc0) {
-      while (this.buffer.length < 3) await new Promise(resolve => setTimeout(resolve, 5));
+      await this.waitForBytes(3);
       length = ((first & ~0xe0) << 16) + (this.buffer[1] << 8) + this.buffer[2];
       offset = 3;
     } else if ((first & 0xf0) === 0xe0) {
-      while (this.buffer.length < 4) await new Promise(resolve => setTimeout(resolve, 5));
+      await this.waitForBytes(4);
       length = ((first & ~0xf0) << 24) + (this.buffer[1] << 16) + (this.buffer[2] << 8) + this.buffer[3];
       offset = 4;
     } else {
-      while (this.buffer.length < 5) await new Promise(resolve => setTimeout(resolve, 5));
+      await this.waitForBytes(5);
       length = (this.buffer[1] << 24) + (this.buffer[2] << 16) + (this.buffer[3] << 8) + this.buffer[4];
       offset = 5;
     }
-    while (this.buffer.length < offset + length) await new Promise(resolve => setTimeout(resolve, 5));
+    await this.waitForBytes(offset + length);
     const word = this.buffer.slice(offset, offset + length).toString();
     this.buffer = this.buffer.slice(offset + length);
     return word;
@@ -171,6 +208,7 @@ function parseSentence(sentence) {
 async function supabase(pathname, options = {}) {
   const response = await fetch(`${config.supabaseUrl}/rest/v1/${pathname}`, {
     ...options,
+    signal: options.signal || AbortSignal.timeout(config.supabaseTimeoutMs),
     headers: {
       apikey: config.supabaseKey,
       Authorization: `Bearer ${config.supabaseKey}`,
@@ -199,7 +237,8 @@ async function getMikrotikApi(router) {
     port: router.api_port || 8728,
     tls: router.api_tls === true,
     user: config.mikrotikUser,
-    password: config.mikrotikPassword
+    password: config.mikrotikPassword,
+    timeoutMs: config.routerTimeoutMs
   });
   await api.connect();
   await api.login();
