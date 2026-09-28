@@ -3,6 +3,7 @@ const tls = require('tls');
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { buildUsageSnapshot, parseCounterPair } = require('./usage-meter.cjs');
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -37,6 +38,8 @@ const config = {
   mikrotikPassword: process.env.MIKROTIK_PASSWORD,
   dryRun: String(process.env.WORKER_DRY_RUN || 'true').toLowerCase() !== 'false',
   intervalMs: Number(process.env.WORKER_INTERVAL_MS || 30000),
+  syncUsage: String(process.env.WORKER_SYNC_USAGE || 'true').toLowerCase() !== 'false',
+  usageIntervalMs: Number(process.env.WORKER_USAGE_INTERVAL_MS || 300000),
   onlyPppoe: String(process.env.WORKER_ONLY_PPPOE || '').trim(),
   syncWinboxRecharges: String(process.env.WORKER_SYNC_WINBOX_RECHARGES || 'false').toLowerCase() === 'true',
   syncWinboxCuts: String(process.env.WORKER_SYNC_WINBOX_CUTS || 'false').toLowerCase() === 'true',
@@ -665,6 +668,159 @@ async function listRouterQueues(router) {
   }
 }
 
+function routerUsesPppoe(router) {
+  return String(router?.kind || '').trim().toLocaleLowerCase('es') === 'fibra';
+}
+
+async function listRouterUsage(router) {
+  const api = await getMikrotikApi(router);
+  try {
+    if (routerUsesPppoe(router)) {
+      const activeReplies = await api.talk([
+        '/ppp/active/print',
+        '?service=pppoe',
+        '=.proplist=.id,name,session-id'
+      ]);
+      const interfaceReplies = await api.talk([
+        '/interface/print',
+        '=.proplist=name,rx-byte,tx-byte'
+      ]);
+      const interfaceByIdentity = new Map(interfaceReplies.map(parseSentence).map(item => {
+        const match = String(item.name || '').match(/^<pppoe-(.+)>$/i);
+        return [normalizeIdentity(match?.[1]), item];
+      }).filter(([identity]) => identity));
+
+      return activeReplies.map(parseSentence).filter(item => item.name).map(item => {
+        const interfaceStats = interfaceByIdentity.get(normalizeIdentity(item.name)) || {};
+        return {
+          identity: normalizeIdentity(item.name),
+          target: '',
+          source: 'pppoe',
+          counterKey: item['session-id'] || item['.id'] || item.name,
+          // En la interfaz PPP, TX del router es descarga del cliente y RX es subida.
+          downloadBytes: Number(interfaceStats['tx-byte'] || 0),
+          uploadBytes: Number(interfaceStats['rx-byte'] || 0)
+        };
+      });
+    }
+
+    const replies = await api.talk([
+      '/queue/simple/print',
+      '=.proplist=.id,name,target,bytes'
+    ]);
+    return replies.map(parseSentence).filter(item => item.name).map(item => {
+      // En Simple Queue los contadores siguen el orden subida/descarga.
+      const [uploadBytes, downloadBytes] = parseCounterPair(item.bytes);
+      return {
+        identity: normalizeIdentity(item.name),
+        target: normalizeQueueTarget(item.target),
+        source: 'simple-queue',
+        counterKey: item['.id'] || item.name,
+        downloadBytes,
+        uploadBytes
+      };
+    });
+  } finally {
+    api.close();
+  }
+}
+
+function usageReadingForCustomer(router, customer, byIdentity, byTarget) {
+  const identity = routerUsesPppoe(router)
+    ? normalizeIdentity(customer.pppoe_user)
+    : normalizeIdentity(customer.queue_name || customer.pppoe_user);
+  const target = normalizeQueueTarget(customer.ip_address);
+  return byIdentity.get(identity) || (target ? byTarget.get(target) : null) || null;
+}
+
+function usageNeedsSave(previous, next) {
+  if (!previous) return true;
+  if (Number(previous.version || 0) !== Number(next.version || 0)) return true;
+  if (Number(previous.downloadBytes || 0) !== Number(next.downloadBytes || 0)) return true;
+  if (Number(previous.uploadBytes || 0) !== Number(next.uploadBytes || 0)) return true;
+  if (String(previous.counterKey || '') !== String(next.counterKey || '')) return true;
+  const lastSaved = new Date(previous.lastSeenAt || 0).getTime();
+  return !Number.isFinite(lastSaved) || Date.now() - lastSaved >= 30 * 60 * 1000;
+}
+
+async function saveUsage(payment, usage) {
+  const payload = payment.qr_payload && typeof payment.qr_payload === 'object' && !Array.isArray(payment.qr_payload)
+    ? payment.qr_payload
+    : {};
+  await supabase(`payments?id=eq.${payment.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ qr_payload: { ...payload, usage } })
+  });
+}
+
+async function runInChunks(items, chunkSize, worker) {
+  for (let index = 0; index < items.length; index += chunkSize) {
+    const chunk = items.slice(index, index + chunkSize);
+    const results = await Promise.allSettled(chunk.map(worker));
+    for (const result of results) {
+      if (result.status === 'rejected') console.error(`Consumo no guardado: ${result.reason?.message || result.reason}`);
+    }
+  }
+}
+
+async function syncRouterUsage(router, latestPaymentByCustomer) {
+  const readings = await listRouterUsage(router);
+  const byIdentity = new Map(readings.map(reading => [reading.identity, reading]));
+  const byTarget = new Map(readings.filter(reading => reading.target).map(reading => [reading.target, reading]));
+  const customers = await supabase(
+    `customers?select=id,pppoe_user,queue_name,ip_address&router_id=eq.${router.id}`,
+    { method: 'GET', prefer: '' }
+  );
+  const observedAt = new Date().toISOString();
+  const updates = [];
+
+  for (const customer of customers || []) {
+    const payment = latestPaymentByCustomer.get(customer.id);
+    if (!payment) continue;
+    const reading = usageReadingForCustomer(router, customer, byIdentity, byTarget);
+    if (!reading) continue;
+    const previous = payment.qr_payload?.usage || null;
+    const cycleStartedAt = payment.paid_at || payment.created_at;
+    const usage = buildUsageSnapshot({
+      previous,
+      current: reading,
+      source: reading.source,
+      counterKey: reading.counterKey,
+      cycleStartedAt,
+      observedAt
+    });
+    if (usageNeedsSave(previous, usage)) updates.push({ payment, usage });
+  }
+
+  await runInChunks(updates, 10, update => saveUsage(update.payment, update.usage));
+  if (updates.length) console.log(`Consumo actualizado ${router.name}: ${updates.length} cliente(s)`);
+}
+
+async function syncUsageCounters() {
+  if (!config.syncUsage) return;
+  console.log('Lectura de consumo iniciada.');
+  const [routers, payments] = await Promise.all([
+    supabase('routers?select=*&active=eq.true', { method: 'GET', prefer: '' }),
+    supabase('payments?select=id,customer_id,paid_at,created_at,qr_payload&status=eq.confirmado&order=paid_at.desc&limit=1000', {
+      method: 'GET',
+      prefer: ''
+    })
+  ]);
+  const latestPaymentByCustomer = new Map();
+  for (const payment of payments || []) {
+    if (!latestPaymentByCustomer.has(payment.customer_id)) latestPaymentByCustomer.set(payment.customer_id, payment);
+  }
+
+  for (const router of routers || []) {
+    try {
+      await syncRouterUsage(router, latestPaymentByCustomer);
+    } catch (error) {
+      console.error(`Lectura de consumo fallo ${router.name}: ${error.message}`);
+    }
+  }
+  console.log('Lectura de consumo terminada.');
+}
+
 async function syncRouterFromWinbox(router) {
   const secrets = await listRouterSecrets(router);
   const queues = await listRouterQueues(router);
@@ -781,6 +937,10 @@ async function tick() {
   );
   await processPendingActions();
   await processExpiredCustomers();
+  if (config.syncUsage && Date.now() - lastUsageSyncAt >= config.usageIntervalMs) {
+    lastUsageSyncAt = Date.now();
+    await syncUsageCounters();
+  }
   await syncWinboxChanges();
 }
 
@@ -806,6 +966,7 @@ async function recoverFailedPaymentActions() {
 }
 
 let tickRunning = false;
+let lastUsageSyncAt = 0;
 
 async function guardedTick() {
   if (tickRunning) {
@@ -825,13 +986,17 @@ async function main() {
   requireEnv('SUPABASE_SERVICE_ROLE_KEY', config.supabaseKey);
   requireEnv('MIKROTIK_PASSWORD', config.mikrotikPassword);
 
-  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} QUEUE_CUT_LIMIT=${config.queueCutLimit} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
+  console.log(`Worker iniciado. DRY_RUN=${config.dryRun ? 'si' : 'no'} intervalo=${config.intervalMs}ms ONLY_PPPOE=${config.onlyPppoe || 'todos'} QUEUE_CUT_LIMIT=${config.queueCutLimit} SYNC_WINBOX_RECHARGES=${config.syncWinboxRecharges ? 'si' : 'no'} SYNC_USAGE=${config.syncUsage ? `cada ${config.usageIntervalMs}ms` : 'no'} RADIUS=${config.radiusManagedAccounts.size ? 'prueba limitada' : 'no'}`);
   await recoverFailedPaymentActions();
   await guardedTick();
   setInterval(() => guardedTick().catch(error => console.error(error.message)), config.intervalMs);
 }
 
-main().catch(error => {
-  console.error(`Error: ${error.message}`);
-  process.exitCode = 1;
-});
+module.exports = { getMikrotikApi, parseSentence, supabase };
+
+if (require.main === module) {
+  main().catch(error => {
+    console.error(`Error: ${error.message}`);
+    process.exitCode = 1;
+  });
+}

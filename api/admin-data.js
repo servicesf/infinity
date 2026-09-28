@@ -3,6 +3,8 @@ import { supabaseFetch } from './_supabase.js';
 
 function normalizeCustomer(row, payments = []) {
   const isCut = row.status === 'cortado';
+  const currentPayment = payments.find(payment => payment.status === 'confirmado') || null;
+  const currentUsage = currentPayment?.qr_payload?.usage || null;
   return {
     id: row.id,
     nombre: row.full_name,
@@ -24,14 +26,26 @@ function normalizeCustomer(row, payments = []) {
       code: row.routers.code,
       kind: row.routers.kind
     } : null,
-    historial: payments.map(payment => ({
+    consumo: currentUsage ? {
+      descargaBytes: Number(currentUsage.downloadBytes || 0),
+      subidaBytes: Number(currentUsage.uploadBytes || 0),
+      totalBytes: Number(currentUsage.downloadBytes || 0) + Number(currentUsage.uploadBytes || 0),
+      desde: currentUsage.cycleStartedAt || currentPayment.paid_at || currentPayment.created_at,
+      ultimaLectura: currentUsage.lastSeenAt || null,
+      fuente: currentUsage.source || ''
+    } : null,
+    consumoPendiente: Boolean(currentPayment),
+    historial: payments.slice(0, 3).map(payment => ({
       id: payment.id,
       fecha: payment.paid_at,
       tipo: payment.method,
       monto: Number(payment.amount || 0),
       metodo: payment.method,
       estado: payment.status,
-      nota: payment.reference || ''
+      nota: payment.reference || '',
+      consumoBytes: payment.qr_payload?.usage
+        ? Number(payment.qr_payload.usage.downloadBytes || 0) + Number(payment.qr_payload.usage.uploadBytes || 0)
+        : null
     }))
   };
 }
@@ -53,7 +67,7 @@ export default async function handler(req, res) {
     const paymentsByCustomer = new Map();
     for (const payment of payments || []) {
       const list = paymentsByCustomer.get(payment.customer_id) || [];
-      if (list.length < 3) list.push(payment);
+      list.push(payment);
       paymentsByCustomer.set(payment.customer_id, list);
     }
 

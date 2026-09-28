@@ -113,6 +113,15 @@ function formatMoney(value) {
   return `Bs. ${Number(value || 0).toFixed(0)}`;
 }
 
+function formatDataUsage(value) {
+  const bytes = Math.max(0, Number(value || 0));
+  if (bytes >= 1e12) return `${(bytes / 1e12).toFixed(2)} TB`;
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(2)} GB`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+  if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(1)} KB`;
+  return `${Math.round(bytes)} B`;
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
@@ -352,6 +361,7 @@ function renderDetail() {
   const status = getEffectiveStatus(client);
   const countdown = countdownParts(client);
   const payments = client.historial || [];
+  const usage = client.consumo;
   const dueTitle = status === 'cortado' ? 'Servicio' : 'Vence';
   els.detail.innerHTML = `
     <div class="detail-head">
@@ -372,6 +382,27 @@ function renderDetail() {
       <div class="detail-item"><span>Corte auto</span><strong>${client.autoCutEnabled ? 'Activado' : 'No'}</strong></div>
     </div>
 
+    <section class="usage-summary" aria-label="Consumo del ciclo actual">
+      <div class="usage-heading">
+        <div>
+          <span>Consumo del ciclo actual</span>
+          <small>${usage ? `Desde ${formatDateTime(usage.desde)}` : 'Desde la recarga'}</small>
+        </div>
+        <i class="fas fa-chart-area" aria-hidden="true"></i>
+      </div>
+      ${usage ? `
+        <strong class="usage-total">${formatDataUsage(usage.totalBytes)}</strong>
+        <div class="usage-parts">
+          <span><i class="fas fa-download"></i> Descarga <strong>${formatDataUsage(usage.descargaBytes)}</strong></span>
+          <span><i class="fas fa-upload"></i> Subida <strong>${formatDataUsage(usage.subidaBytes)}</strong></span>
+        </div>
+        <small class="usage-updated">Última lectura: ${formatDateTime(usage.ultimaLectura)}</small>
+      ` : `
+        <strong class="usage-waiting">${client.consumoPendiente ? 'Preparando la primera lectura' : 'Sin una recarga registrada'}</strong>
+        <small class="usage-updated">El contador comienza con una recarga confirmada.</small>
+      `}
+    </section>
+
     <div class="detail-actions">
       <button class="btn primary" type="button" data-detail-action="recharge"><i class="fas fa-money-bill-wave"></i> Recargar 30d</button>
       <button class="btn ghost" type="button" data-detail-action="schedule-cut"><i class="fas fa-calendar-check"></i> Programar corte</button>
@@ -386,6 +417,7 @@ function renderDetail() {
           <span>${formatDateTime(payment.fecha)}</span>
           <strong>${formatMoney(payment.monto)}</strong>
           <small>${payment.metodo || payment.tipo || 'manual'} · ${payment.estado || ''}</small>
+          ${payment.consumoBytes === null ? '' : `<small>Consumo del ciclo: ${formatDataUsage(payment.consumoBytes)}</small>`}
         </div>
       `).join('') : '<p>Sin pagos registrados todavia.</p>'}
     </div>
