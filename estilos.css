@@ -1853,6 +1853,20 @@ body.modal-open {
   padding: 18px;
 }
 
+.store-coming-soon {
+  min-height: calc(100vh - 190px);
+  display: grid;
+  place-items: center;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.store-coming-soon h1 {
+  color: var(--blue);
+  font-size: clamp(2.4rem, 9vw, 5.5rem);
+  font-weight: 900;
+}
+
 #page-cliente.customer-loaded > #clientPortalHero,
 #page-cliente.customer-loaded .lookup-card {
   display: none;

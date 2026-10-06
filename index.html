@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Infinit Flores | Internet fibra, TV y servicios</title>
+  <title>Infinit Flores | Internet fibra y TV</title>
   <link rel="icon" href="imagenes/favicon-infinit.svg" type="image/svg+xml"/>
   <link rel="alternate icon" href="imagenes/logooficiaal.png" type="image/png"/>
-  <link rel="stylesheet" href="estilos.css?v=20261006-4"/>
+  <link rel="stylesheet" href="estilos.css?v=20261006-5"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -21,11 +21,10 @@
 
       <nav class="nav-shell" id="navShell" aria-label="Navegacion principal">
         <a href="#inicio" data-page-link="inicio" class="active">Inicio</a>
-        <a href="#internet" data-page-link="internet">FTTH</a>
+        <a href="#internet" data-page-link="internet">Internet</a>
         <a href="#cliente" data-page-link="cliente">Prepago</a>
         <a href="#tv" data-page-link="tv">Recargas</a>
         <a href="#tienda" data-page-link="tienda">Tienda</a>
-        <a href="#servicios" data-page-link="servicios">Servicios</a>
         <a href="#contacto" data-page-link="contacto">Ayuda</a>
       </nav>
 
@@ -72,10 +71,10 @@
             <h1>¿Que necesitas hoy?</h1>
           </div>
 
-          <div class="quick-tabs" role="tablist" aria-label="Servicios principales">
+          <div class="quick-tabs" role="tablist" aria-label="Opciones principales">
             <button class="quick-tab active" id="quick-tab-ftth" type="button" role="tab" aria-selected="true" aria-controls="quick-panel-ftth" data-quick-tab="ftth">
               <i class="fas fa-house-signal" aria-hidden="true"></i>
-              <span>FTTH</span>
+              <span>Internet</span>
             </button>
             <button class="quick-tab" id="quick-tab-postpago" type="button" role="tab" aria-selected="false" aria-controls="quick-panel-postpago" data-quick-tab="postpago">
               <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
@@ -272,47 +271,6 @@
       </div>
     </section>
 
-    <section class="app-page" id="page-servicios" data-page="servicios">
-      <section class="page-hero small">
-        <div>
-          <span class="label-pill">Servicios adicionales</span>
-          <h1>Tecnologia, seguridad y reparaciones.</h1>
-          <p>Soluciones para hogares, tiendas y negocios.</p>
-        </div>
-      </section>
-
-      <div class="service-grid">
-        <article class="service-card image">
-          <img src="imagenes/camaras2.png" alt="Kit de camaras"/>
-          <div>
-            <h3>Camaras de seguridad</h3>
-            <p>Instalacion y configuracion para hogares y negocios.</p>
-            <a href="https://wa.me/59167236144?text=Hola,%20quiero%20cotizacion%20de%20camaras" target="_blank" rel="noopener">Cotizar</a>
-          </div>
-        </article>
-        <article class="service-card image">
-          <img src="imagenes/elec-tv.png" alt="Reparacion de televisores"/>
-          <div>
-            <h3>Electronica</h3>
-            <p>Reparacion de televisores, radios, parlantes y equipos.</p>
-            <a href="https://wa.me/59167236144?text=Hola,%20quiero%20consulta%20por%20reparacion%20electronica" target="_blank" rel="noopener">Consultar</a>
-          </div>
-        </article>
-        <article class="service-card">
-          <i class="fas fa-tv"></i>
-          <h3>Cafini / Lidimi / Sandi / Xiny</h3>
-          <p>TV Box Android, accesorios y equipos tecnologicos.</p>
-          <a href="https://wa.me/59174149421?text=Hola,%20quiero%20informacion%20sobre%20productos%20tecnologicos" target="_blank" rel="noopener">Pedir por WhatsApp</a>
-        </article>
-        <article class="service-card">
-          <i class="fas fa-leaf"></i>
-          <h3>Health Green World</h3>
-          <p>Suplementos y productos con 20% de descuento.</p>
-          <a href="https://www.healthgreenworld.com/?userName=cipriano74" target="_blank" rel="noopener">Ver catalogo</a>
-        </article>
-      </div>
-    </section>
-
     <section class="app-page" id="page-cliente" data-page="cliente">
       <section class="page-hero small" id="clientPortalHero">
         <div>
@@ -343,45 +301,9 @@
     </section>
 
     <section class="app-page" id="page-tienda" data-page="tienda">
-      <section class="page-hero small">
-        <div>
-          <span class="label-pill">Tienda</span>
-          <h1>Productos HGW, Cafini, Lidimi y mas.</h1>
-          <p>Agrega productos al carrito, aplica cupones y envia tu pedido por WhatsApp.</p>
-        </div>
+      <section class="store-coming-soon" aria-labelledby="storeComingSoonTitle">
+        <h1 id="storeComingSoonTitle">Muy pronto</h1>
       </section>
-
-      <div class="shop-layout">
-        <section class="shop-main">
-          <div class="shop-filters" id="shopFilters">
-            <button class="active" type="button" data-shop-filter="todos">Todos</button>
-            <button type="button" data-shop-filter="hgw">HGW</button>
-            <button type="button" data-shop-filter="cafini">Cafini</button>
-            <button type="button" data-shop-filter="lidimi">Lidimi</button>
-            <button type="button" data-shop-filter="sanci">Sanci</button>
-          </div>
-          <div class="store-grid" id="storeGrid"></div>
-        </section>
-
-        <aside class="cart-panel">
-          <div class="cart-head">
-            <h2>Carrito</h2>
-            <span id="cartCount">0 items</span>
-          </div>
-          <div class="cart-items" id="cartItems"></div>
-          <div class="coupon-row">
-            <input id="couponInput" type="text" placeholder="Cupon"/>
-            <button class="mini-action" type="button" id="applyCouponBtn">Aplicar</button>
-          </div>
-          <div class="cart-totals">
-            <div><span>Subtotal</span><strong id="cartSubtotal">Bs. 0</strong></div>
-            <div><span>Descuento</span><strong id="cartDiscount">Bs. 0</strong></div>
-            <div class="total"><span>Total</span><strong id="cartTotal">Bs. 0</strong></div>
-          </div>
-          <button class="btn primary full" type="button" id="sendCartBtn"><i class="fab fa-whatsapp"></i> Enviar pedido</button>
-          <small>Cupon inicial: INFINIT10</small>
-        </aside>
-      </div>
     </section>
 
     <section class="app-page" id="page-contacto" data-page="contacto">
@@ -466,6 +388,6 @@
     </form>
   </div>
 
-  <script src="script.js?v=20261006-4"></script>
+  <script src="script.js?v=20261006-5"></script>
 </body>
 </html>
