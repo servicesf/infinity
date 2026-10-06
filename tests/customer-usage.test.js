@@ -68,3 +68,15 @@ test('mantiene el portal disponible aunque aun no exista una lectura', () => {
   assert.equal(result.consumoPendiente, true);
   assert.equal(result.ultimosPagos[0].consumoBytes, null);
 });
+
+test('entrega solamente los cuatro pagos confirmados mas recientes', () => {
+  const payments = Array.from({ length: 6 }, (_, index) => payment({
+    id: `payment-${index + 1}`,
+    paid_at: `2026-0${index + 1}-01T12:00:00Z`
+  }));
+  const result = normalizeCustomer(customer, payments);
+  assert.deepEqual(
+    result.ultimosPagos.map(item => item.id),
+    ['payment-6', 'payment-5', 'payment-4', 'payment-3']
+  );
+});

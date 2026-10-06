@@ -41,7 +41,7 @@ export function normalizeCustomer(row, payments = []) {
     pppoe: row.pppoe_user,
     consumo: normalizeUsage(currentPayment),
     consumoPendiente: Boolean(currentPayment),
-    ultimosPagos: confirmedPayments.slice(0, 3).map(payment => ({
+    ultimosPagos: confirmedPayments.slice(0, 4).map(payment => ({
       id: payment.id,
       fecha: payment.paid_at || payment.created_at,
       corte: payment.qr_payload?.usage?.cycleEndsAt

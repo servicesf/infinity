@@ -475,6 +475,22 @@ function setCustomerPortalLoaded(loaded) {
   document.getElementById('page-cliente')?.classList.toggle('customer-loaded', loaded);
 }
 
+function renderCustomerPayment(payment) {
+  const consumption = payment.consumoBytes === null || payment.consumoBytes === undefined
+    ? 'Sin medición'
+    : formatDataUsage(payment.consumoBytes);
+  return `
+    <div class="payment-history-row">
+      <span class="payment-history-copy">
+        <small class="payment-history-paid"><b>Pago:</b> ${formatDateTime(payment.fecha)}</small>
+        <small class="payment-history-cut"><b>Corte:</b> ${formatDateTime(payment.corte)}</small>
+        <small class="payment-history-usage"><b>Consumo del ciclo:</b> ${consumption}</small>
+      </span>
+      <strong class="payment-history-amount">Bs. ${escapeHtml(payment.monto)}</strong>
+    </div>
+  `;
+}
+
 function renderCustomer(customer) {
   const target = document.getElementById('customerResult');
   if (!target) return;
@@ -537,19 +553,21 @@ function renderCustomer(customer) {
       </section>
       <h3>Ultimos pagos</h3>
       <div class="mini-history">
-        ${payments.length ? payments.map(payment => `
-          <div>
-            <span>
-              <b>Pago:</b> ${formatDateTime(payment.fecha)}
-              ${payment.corte ? `<small><b>Corte:</b> ${formatDateTime(payment.corte)}</small>` : ''}
-              ${payment.consumoBytes === null || payment.consumoBytes === undefined
-                ? ''
-                : `<small>Consumo del ciclo: ${formatDataUsage(payment.consumoBytes)}</small>`}
-            </span>
-            <strong>Bs. ${escapeHtml(payment.monto)}</strong>
-          </div>
-        `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
+        ${payments.length
+          ? payments.slice(0, 2).map(renderCustomerPayment).join('')
+          : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
+      ${payments.length > 2 ? `
+        <details class="payment-history-more">
+          <summary>
+            <span>Ver ${payments.length - 2} pagos anteriores</span>
+            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+          </summary>
+          <div class="mini-history payment-history-older">
+            ${payments.slice(2, 4).map(renderCustomerPayment).join('')}
+          </div>
+        </details>
+      ` : ''}
       <section class="manual-payment" aria-labelledby="manualPaymentTitle">
         <div class="manual-payment-heading">
           <div>
