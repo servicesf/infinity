@@ -2083,6 +2083,10 @@ body.modal-open {
   font-size: 0.86rem;
 }
 
+.mini-history span b {
+  color: var(--ink);
+}
+
 .manual-payment {
   display: grid;
   gap: 14px;

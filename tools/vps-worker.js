@@ -739,6 +739,7 @@ function usageNeedsSave(previous, next) {
   if (Number(previous.downloadBytes || 0) !== Number(next.downloadBytes || 0)) return true;
   if (Number(previous.uploadBytes || 0) !== Number(next.uploadBytes || 0)) return true;
   if (String(previous.counterKey || '') !== String(next.counterKey || '')) return true;
+  if (String(previous.cycleEndsAt || '') !== String(next.cycleEndsAt || '')) return true;
   const lastSaved = new Date(previous.lastSeenAt || 0).getTime();
   return !Number.isFinite(lastSaved) || Date.now() - lastSaved >= 30 * 60 * 1000;
 }
@@ -768,7 +769,7 @@ async function syncRouterUsage(router, latestPaymentByCustomer) {
   const byIdentity = new Map(readings.map(reading => [reading.identity, reading]));
   const byTarget = new Map(readings.filter(reading => reading.target).map(reading => [reading.target, reading]));
   const customers = await supabase(
-    `customers?select=id,pppoe_user,queue_name,ip_address&router_id=eq.${router.id}`,
+    `customers?select=id,pppoe_user,queue_name,ip_address,paid_until&router_id=eq.${router.id}`,
     { method: 'GET', prefer: '' }
   );
   const observedAt = new Date().toISOString();
@@ -781,14 +782,17 @@ async function syncRouterUsage(router, latestPaymentByCustomer) {
     if (!reading) continue;
     const previous = payment.qr_payload?.usage || null;
     const cycleStartedAt = payment.paid_at || payment.created_at;
-    const usage = buildUsageSnapshot({
-      previous,
-      current: reading,
-      source: reading.source,
-      counterKey: reading.counterKey,
-      cycleStartedAt,
-      observedAt
-    });
+    const usage = {
+      ...buildUsageSnapshot({
+        previous,
+        current: reading,
+        source: reading.source,
+        counterKey: reading.counterKey,
+        cycleStartedAt,
+        observedAt
+      }),
+      cycleEndsAt: customer.paid_until || previous?.cycleEndsAt || null
+    };
     if (usageNeedsSave(previous, usage)) updates.push({ payment, usage });
   }
 

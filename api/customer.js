@@ -44,6 +44,10 @@ export function normalizeCustomer(row, payments = []) {
     ultimosPagos: confirmedPayments.slice(0, 3).map(payment => ({
       id: payment.id,
       fecha: payment.paid_at || payment.created_at,
+      corte: payment.qr_payload?.usage?.cycleEndsAt
+        || payment.qr_payload?.review?.paidUntil
+        || payment.qr_payload?.service?.paidUntil
+        || (payment.id === currentPayment?.id ? row.paid_until : null),
       monto: Number(payment.amount || 0),
       metodo: payment.method,
       estado: payment.status,

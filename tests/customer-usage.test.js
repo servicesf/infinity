@@ -35,7 +35,7 @@ test('muestra el consumo del pago confirmado mas reciente como ciclo actual', ()
     payment({
       id: 'old',
       paid_at: '2026-09-01T12:00:00Z',
-      qr_payload: { usage: { downloadBytes: 40, uploadBytes: 10 } }
+      qr_payload: { usage: { downloadBytes: 40, uploadBytes: 10, cycleEndsAt: '2026-10-01T12:00:00Z' } }
     }),
     payment({ id: 'rejected', status: 'rechazado', paid_at: '2026-10-05T12:00:00Z' }),
     payment({
@@ -55,7 +55,9 @@ test('muestra el consumo del pago confirmado mas reciente como ciclo actual', ()
   assert.equal(result.consumo.totalBytes, 150);
   assert.equal(result.consumo.descargaBytes, 120);
   assert.equal(result.ultimosPagos[0].id, 'current');
+  assert.equal(result.ultimosPagos[0].corte, customer.paid_until);
   assert.equal(result.ultimosPagos[0].consumoBytes, 150);
+  assert.equal(result.ultimosPagos[1].corte, '2026-10-01T12:00:00Z');
   assert.equal(result.ultimosPagos[1].consumoBytes, 50);
   assert.equal(result.ultimosPagos.length, 2);
 });

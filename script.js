@@ -319,8 +319,8 @@ const demoCustomers = [
     },
     consumoPendiente: true,
     ultimosPagos: [
-      { fecha: '2026-06-18', monto: 149, metodo: 'QR Bancario', consumoBytes: 89120571392 },
-      { fecha: '2026-05-18', monto: 149, metodo: 'Efectivo', consumoBytes: 115964116992 }
+      { fecha: '2026-06-18', corte: '2026-07-18T18:00:00', monto: 149, metodo: 'QR Bancario', consumoBytes: 89120571392 },
+      { fecha: '2026-05-18', corte: '2026-06-18T15:00:00', monto: 149, metodo: 'Efectivo', consumoBytes: 115964116992 }
     ]
   }
 ];
@@ -521,7 +521,6 @@ function renderCustomer(customer) {
         <div class="customer-usage-head">
           <div>
             <span>Consumo del ciclo actual</span>
-            <small>${usage ? `Desde ${formatDateTime(usage.desde)}` : 'Desde tu última recarga'}</small>
           </div>
           <i class="fas fa-chart-area" aria-hidden="true"></i>
         </div>
@@ -531,7 +530,6 @@ function renderCustomer(customer) {
             <span><i class="fas fa-download"></i> Descarga <strong>${formatDataUsage(usage.descargaBytes)}</strong></span>
             <span><i class="fas fa-upload"></i> Subida <strong>${formatDataUsage(usage.subidaBytes)}</strong></span>
           </div>
-          <small class="customer-usage-updated">Última actualización: ${formatDateTime(usage.ultimaLectura)}</small>
         ` : `
           <strong class="customer-usage-waiting">${customer.consumoPendiente ? 'Preparando la primera lectura' : 'Sin una recarga registrada'}</strong>
           <small class="customer-usage-updated">El consumo comienza a medirse con una recarga confirmada.</small>
@@ -542,7 +540,8 @@ function renderCustomer(customer) {
         ${payments.length ? payments.map(payment => `
           <div>
             <span>
-              ${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}
+              <b>Pago:</b> ${formatDateTime(payment.fecha)}
+              ${payment.corte ? `<small><b>Corte:</b> ${formatDateTime(payment.corte)}</small>` : ''}
               ${payment.consumoBytes === null || payment.consumoBytes === undefined
                 ? ''
                 : `<small>Consumo del ciclo: ${formatDataUsage(payment.consumoBytes)}</small>`}
