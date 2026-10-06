@@ -3133,11 +3133,29 @@ body.modal-open {
   .category-grid,
   .service-grid,
   .contact-grid,
-  .receipt-grid,
   .terms-panel ul,
   .form-split,
   .method-grid {
     grid-template-columns: 1fr;
+  }
+
+  .receipt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .receipt-grid > div {
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .receipt-grid span {
+    font-size: 0.9rem;
+  }
+
+  .receipt-grid strong {
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
   }
 
   .recharge-grid {
