@@ -310,9 +310,17 @@ const demoCustomers = [
     precio: 149,
     estado: 'activo',
     pagadoHasta: '2026-07-18T18:00:00',
+    consumo: {
+      descargaBytes: 80530636800,
+      subidaBytes: 8589934592,
+      totalBytes: 89120571392,
+      desde: '2026-06-18T18:00:00',
+      ultimaLectura: '2026-07-10T12:00:00'
+    },
+    consumoPendiente: true,
     ultimosPagos: [
-      { fecha: '2026-06-18', monto: 149, metodo: 'QR Bancario' },
-      { fecha: '2026-05-18', monto: 149, metodo: 'Efectivo' }
+      { fecha: '2026-06-18', monto: 149, metodo: 'QR Bancario', consumoBytes: 89120571392 },
+      { fecha: '2026-05-18', monto: 149, metodo: 'Efectivo', consumoBytes: 115964116992 }
     ]
   }
 ];
@@ -423,6 +431,15 @@ function formatPersonName(value) {
   }).join('-')).join(' ');
 }
 
+function formatDataUsage(value) {
+  const bytes = Math.max(0, Number(value || 0));
+  if (bytes >= 1e12) return `${(bytes / 1e12).toFixed(2)} TB`;
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(2)} GB`;
+  if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+  if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(1)} KB`;
+  return `${Math.round(bytes)} B`;
+}
+
 function paymentWhatsappUrl(customer, method) {
   const message = [
     'Hola, ya pagué mi servicio de Internet.',
@@ -481,6 +498,7 @@ function renderCustomer(customer) {
   const estado = escapeHtml(estadoValue);
   const qrEligible = Number(customer.precio || 0) === 149;
   const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Transferencia bancaria';
+  const usage = customer.consumo || null;
   target.innerHTML = `
     <div class="receipt-card">
       <div class="receipt-head">
@@ -499,10 +517,38 @@ function renderCustomer(customer) {
         <div><span>Restante</span><strong>${remainingServiceTime(customer.pagadoHasta)}</strong></div>
         <div><span>Corte</span><strong>${formatDateTime(customer.pagadoHasta)}</strong></div>
       </div>
+      <section class="customer-usage" aria-label="Consumo del ciclo actual">
+        <div class="customer-usage-head">
+          <div>
+            <span>Consumo del ciclo actual</span>
+            <small>${usage ? `Desde ${formatDateTime(usage.desde)}` : 'Desde tu última recarga'}</small>
+          </div>
+          <i class="fas fa-chart-area" aria-hidden="true"></i>
+        </div>
+        ${usage ? `
+          <strong class="customer-usage-total">${formatDataUsage(usage.totalBytes)}</strong>
+          <div class="customer-usage-parts">
+            <span><i class="fas fa-download"></i> Descarga <strong>${formatDataUsage(usage.descargaBytes)}</strong></span>
+            <span><i class="fas fa-upload"></i> Subida <strong>${formatDataUsage(usage.subidaBytes)}</strong></span>
+          </div>
+          <small class="customer-usage-updated">Última actualización: ${formatDateTime(usage.ultimaLectura)}</small>
+        ` : `
+          <strong class="customer-usage-waiting">${customer.consumoPendiente ? 'Preparando la primera lectura' : 'Sin una recarga registrada'}</strong>
+          <small class="customer-usage-updated">El consumo comienza a medirse con una recarga confirmada.</small>
+        `}
+      </section>
       <h3>Ultimos pagos</h3>
       <div class="mini-history">
         ${payments.length ? payments.map(payment => `
-          <div><span>${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}</span><strong>Bs. ${escapeHtml(payment.monto)}</strong></div>
+          <div>
+            <span>
+              ${formatDateTime(payment.fecha)} · ${escapeHtml(payment.metodo)}
+              ${payment.consumoBytes === null || payment.consumoBytes === undefined
+                ? ''
+                : `<small>Consumo del ciclo: ${formatDataUsage(payment.consumoBytes)}</small>`}
+            </span>
+            <strong>Bs. ${escapeHtml(payment.monto)}</strong>
+          </div>
         `).join('') : '<span class="muted">Sin pagos registrados.</span>'}
       </div>
       <section class="manual-payment" aria-labelledby="manualPaymentTitle">

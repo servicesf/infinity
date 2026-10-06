@@ -1983,6 +1983,88 @@ body.modal-open {
   color: var(--ink);
 }
 
+.customer-usage {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 94, 255, 0.18);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #eef7ff 0%, #f3fdff 65%, #e9fbf6 100%);
+}
+
+.customer-usage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.customer-usage-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.customer-usage-head span {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.customer-usage-head small,
+.customer-usage-updated {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.customer-usage-head > i {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+}
+
+.customer-usage-total {
+  color: var(--blue);
+  font-size: clamp(1.8rem, 4vw, 2.45rem);
+  line-height: 1;
+}
+
+.customer-usage-parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.customer-usage-parts > span {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+}
+
+.customer-usage-parts > span > i {
+  margin-right: 6px;
+  color: var(--blue);
+}
+
+.customer-usage-parts strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+}
+
+.customer-usage-waiting {
+  color: var(--ink);
+  font-size: 1.05rem;
+}
+
 .mini-history {
   display: grid;
   gap: 8px;
@@ -1992,6 +2074,13 @@ body.modal-open {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+}
+
+.mini-history span small {
+  display: block;
+  margin-top: 4px;
+  color: var(--blue);
+  font-size: 0.86rem;
 }
 
 .manual-payment {
@@ -3044,6 +3133,10 @@ body.modal-open {
 
   .coupon-row,
   .mini-history div {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-usage-parts {
     grid-template-columns: 1fr;
   }
 

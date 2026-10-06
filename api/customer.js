@@ -1,7 +1,32 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
 
-function normalizeCustomer(row, payments = []) {
+function paymentTimestamp(payment) {
+  const value = payment?.paid_at || payment?.created_at || '';
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function normalizeUsage(payment) {
+  const usage = payment?.qr_payload?.usage;
+  if (!usage) return null;
+
+  const downloadBytes = Number(usage.downloadBytes || 0);
+  const uploadBytes = Number(usage.uploadBytes || 0);
+  return {
+    descargaBytes: downloadBytes,
+    subidaBytes: uploadBytes,
+    totalBytes: downloadBytes + uploadBytes,
+    desde: usage.cycleStartedAt || payment.paid_at || payment.created_at || null,
+    ultimaLectura: usage.lastSeenAt || null
+  };
+}
+
+export function normalizeCustomer(row, payments = []) {
   const isCut = row.status === 'cortado';
+  const confirmedPayments = payments
+    .filter(payment => payment.status === 'confirmado')
+    .sort((left, right) => paymentTimestamp(right) - paymentTimestamp(left));
+  const currentPayment = confirmedPayments[0] || null;
   return {
     id: row.id,
     nombre: row.full_name,
@@ -14,13 +39,16 @@ function normalizeCustomer(row, payments = []) {
     pagadoHasta: isCut ? '' : row.paid_until,
     autoCorte: row.auto_cut_enabled,
     pppoe: row.pppoe_user,
-    ultimosPagos: payments.filter(payment => payment.status === 'confirmado').slice(0, 3).map(payment => ({
+    consumo: normalizeUsage(currentPayment),
+    consumoPendiente: Boolean(currentPayment),
+    ultimosPagos: confirmedPayments.slice(0, 3).map(payment => ({
       id: payment.id,
-      fecha: payment.paid_at,
+      fecha: payment.paid_at || payment.created_at,
       monto: Number(payment.amount || 0),
       metodo: payment.method,
       estado: payment.status,
-      referencia: payment.reference
+      referencia: payment.reference,
+      consumoBytes: normalizeUsage(payment)?.totalBytes ?? null
     }))
   };
 }
