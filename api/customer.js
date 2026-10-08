@@ -1,5 +1,12 @@
 import { hasSupabaseConfig, supabaseFetch } from './_supabase.js';
 
+const E50UG_ROUTER_CODE = 'core-e50ug-caihuasi';
+const E50UG_PAYMENT_QRS = {
+  149: 'imagenes/149bs.jpg',
+  199: 'imagenes/199bs.jpg',
+  299: 'imagenes/299bs.jpg'
+};
+
 function paymentTimestamp(payment) {
   const value = payment?.paid_at || payment?.created_at || '';
   const timestamp = Date.parse(value);
@@ -23,6 +30,8 @@ function normalizeUsage(payment) {
 
 export function normalizeCustomer(row, payments = []) {
   const isCut = row.status === 'cortado';
+  const monthlyPrice = Number(row.monthly_price || 0);
+  const isE50ugCustomer = row.routers?.code === E50UG_ROUTER_CODE;
   const confirmedPayments = payments
     .filter(payment => payment.status === 'confirmado')
     .sort((left, right) => paymentTimestamp(right) - paymentTimestamp(left));
@@ -34,7 +43,8 @@ export function normalizeCustomer(row, payments = []) {
     telefono: row.phone,
     sector: row.sector,
     plan: row.plan_name,
-    precio: Number(row.monthly_price || 0),
+    precio: monthlyPrice,
+    qrPago: isE50ugCustomer ? E50UG_PAYMENT_QRS[monthlyPrice] || '' : '',
     estado: row.status,
     pagadoHasta: isCut ? '' : row.paid_until,
     autoCorte: row.auto_cut_enabled,
@@ -86,7 +96,7 @@ export default async function handler(req, res) {
     const filter = ci
       ? `ci=eq.${encodeURIComponent(ci)}`
       : `phone=eq.${encodeURIComponent(phone)}`;
-    const customers = await supabaseFetch(`customers?select=*&${filter}&limit=1`, {
+    const customers = await supabaseFetch(`customers?select=*,routers(code)&${filter}&limit=1`, {
       method: 'GET',
       prefer: ''
     });

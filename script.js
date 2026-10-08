@@ -329,9 +329,15 @@ const CASH_PAYMENT_ADDRESS = 'Final avenida Vernal, una cuadra antes de llegar a
 const CASH_PAYMENT_MAP = 'https://maps.app.goo.gl/NU331m5qrYJ6Wtk16?g_st=aw';
 const STATIC_PAYMENT_QR = 'imagenes/QROFICIAL.jpeg';
 
-function manualPaymentDetail(method, amount = 0) {
+function customerPaymentQr(amount = 0, assignedQr = '') {
   const paymentAmount = Number(amount || 0);
-  const qrMatchesAmount = paymentAmount === 149;
+  if (assignedQr) return { image: assignedQr, amount: paymentAmount };
+  return paymentAmount === 149 ? { image: STATIC_PAYMENT_QR, amount: 149 } : null;
+}
+
+function manualPaymentDetail(method, amount = 0, assignedQr = '') {
+  const paymentAmount = Number(amount || 0);
+  const paymentQr = customerPaymentQr(paymentAmount, assignedQr);
   const details = {
     'Transferencia bancaria': {
       icon: 'fa-building-columns',
@@ -342,11 +348,12 @@ function manualPaymentDetail(method, amount = 0) {
     },
     'QR bancario estatico': {
       icon: 'fa-qrcode',
-      title: qrMatchesAmount ? 'QR bancario' : 'QR bancario de Bs. 149',
-      text: qrMatchesAmount
+      title: paymentQr ? 'QR bancario' : 'QR bancario no disponible',
+      text: paymentQr
         ? 'Escanea el QR, realiza el pago y envía tu comprobante por WhatsApp.'
-        : `Este QR cobra Bs. 149 y tu mensualidad es Bs. ${paymentAmount || 0}. Elige otro metodo o consulta por WhatsApp.`,
-      image: qrMatchesAmount ? STATIC_PAYMENT_QR : ''
+        : `No hay un QR por Bs. ${paymentAmount || 0} asignado a este servicio. Elige otro metodo o consulta por WhatsApp.`,
+      image: paymentQr?.image || '',
+      amount: paymentQr?.amount || 0
     },
     'Pago en efectivo': {
       icon: 'fa-money-bill-wave',
@@ -358,8 +365,8 @@ function manualPaymentDetail(method, amount = 0) {
   return details[method] || details['Transferencia bancaria'];
 }
 
-function renderManualPaymentDetail(method, amount = 0) {
-  const detail = manualPaymentDetail(method, amount);
+function renderManualPaymentDetail(method, amount = 0, assignedQr = '') {
+  const detail = manualPaymentDetail(method, amount, assignedQr);
   return `
     <div class="manual-payment-detail">
       <div class="manual-payment-detail-head">
@@ -382,9 +389,9 @@ function renderManualPaymentDetail(method, amount = 0) {
       ${detail.image ? `
         <figure class="qr-payment-visual">
           <a href="${detail.image}" target="_blank" rel="noopener" aria-label="Abrir QR bancario en tamano completo">
-            <img src="${detail.image}" alt="QR YaSta de Bs. 149 para pagar el servicio Infinit" loading="lazy" decoding="async"/>
+            <img src="${detail.image}" alt="QR YaSta de Bs. ${detail.amount} para pagar el servicio Infinit" loading="lazy" decoding="async"/>
           </a>
-          <a class="btn light qr-download" href="${detail.image}" download="QR-YaSta-Infinit-Bs149.jpeg"><i class="fas fa-download"></i> Guardar QR</a>
+          <a class="btn light qr-download" href="${detail.image}" download="QR-YaSta-Infinit-Bs${detail.amount}.jpg"><i class="fas fa-download"></i> Guardar QR</a>
         </figure>
       ` : ''}
     </div>
@@ -512,7 +519,7 @@ function renderCustomer(customer) {
   const hasCutDate = Boolean(customer.pagadoHasta && String(customer.pagadoHasta).trim());
   const estadoValue = !hasCutDate && customer.estado !== 'cortado' ? 'activo' : (customer.estado || '');
   const estado = escapeHtml(estadoValue);
-  const qrEligible = Number(customer.precio || 0) === 149;
+  const qrEligible = Boolean(customerPaymentQr(customer.precio, customer.qrPago));
   const defaultPaymentMethod = qrEligible ? 'QR bancario estatico' : 'Transferencia bancaria';
   const usage = customer.consumo || null;
   target.innerHTML = `
@@ -580,13 +587,14 @@ function renderCustomer(customer) {
           <input type="hidden" name="customerCi" value="${escapeHtml(customer.ci)}"/>
           <input type="hidden" name="customerPlan" value="${escapeHtml(customer.plan)}"/>
           <input type="hidden" name="customerAmount" value="${escapeHtml(customer.precio)}"/>
+          <input type="hidden" name="customerPaymentQr" value="${escapeHtml(customer.qrPago || '')}"/>
           <fieldset class="customer-payment-methods">
             <legend>Metodo de pago</legend>
             <label><input type="radio" name="manualMethod" value="Transferencia bancaria" ${qrEligible ? '' : 'checked'}/><span><i class="fas fa-building-columns"></i>Transferencia</span></label>
             <label><input type="radio" name="manualMethod" value="QR bancario estatico" ${qrEligible ? 'checked' : ''}/><span><i class="fas fa-qrcode"></i>QR bancario</span></label>
             <label><input type="radio" name="manualMethod" value="Pago en efectivo"/><span><i class="fas fa-money-bill-wave"></i>Efectivo</span></label>
           </fieldset>
-          <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio)}</div>
+          <div data-manual-payment-detail>${renderManualPaymentDetail(defaultPaymentMethod, customer.precio, customer.qrPago)}</div>
           <a class="btn whatsapp full payment-whatsapp-btn" data-payment-whatsapp
              href="${escapeHtml(paymentWhatsappUrl(customer, defaultPaymentMethod))}" target="_blank" rel="noopener">
             <i class="fab fa-whatsapp"></i> Enviar comprobante por WhatsApp
@@ -647,7 +655,8 @@ document.addEventListener('change', event => {
   const form = method.closest('[data-customer-payment-form]');
   const target = form?.querySelector('[data-manual-payment-detail]');
   const amount = form?.querySelector('input[name="customerAmount"]')?.value || 0;
-  if (target) target.innerHTML = renderManualPaymentDetail(method.value, amount);
+  const assignedQr = form?.querySelector('input[name="customerPaymentQr"]')?.value || '';
+  if (target) target.innerHTML = renderManualPaymentDetail(method.value, amount, assignedQr);
   const link = form?.querySelector('[data-payment-whatsapp]');
   if (link) {
     link.href = paymentWhatsappUrl({

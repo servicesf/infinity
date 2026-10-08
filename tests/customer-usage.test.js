@@ -69,6 +69,34 @@ test('mantiene el portal disponible aunque aun no exista una lectura', () => {
   assert.equal(result.ultimosPagos[0].consumoBytes, null);
 });
 
+test('asigna el QR por precio solamente a clientes del E50UG', () => {
+  const result = normalizeCustomer({
+    ...customer,
+    routers: { code: 'core-e50ug-caihuasi' }
+  }, []);
+  assert.equal(result.qrPago, 'imagenes/149bs.jpg');
+
+  const anotherRouter = normalizeCustomer({
+    ...customer,
+    routers: { code: 'rb4011-fibra' }
+  }, []);
+  assert.equal(anotherRouter.qrPago, '');
+});
+
+test('asigna los tres QR del E50UG de acuerdo con la mensualidad', () => {
+  const prices = [149, 199, 299];
+  const images = prices.map(monthly_price => normalizeCustomer({
+    ...customer,
+    monthly_price,
+    routers: { code: 'core-e50ug-caihuasi' }
+  }, []).qrPago);
+  assert.deepEqual(images, [
+    'imagenes/149bs.jpg',
+    'imagenes/199bs.jpg',
+    'imagenes/299bs.jpg'
+  ]);
+});
+
 test('entrega solamente los cuatro pagos confirmados mas recientes', () => {
   const payments = Array.from({ length: 6 }, (_, index) => payment({
     id: `payment-${index + 1}`,
