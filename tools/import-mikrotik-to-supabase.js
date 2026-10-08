@@ -202,9 +202,9 @@ function planInfo(profile = '') {
     40: 150,
     50: 149,
     60: 199,
-    100: 200,
+    100: 199,
     150: 250,
-    200: 300
+    200: 299
   };
   const prefix = config.routerKind.startsWith('fibra') ? 'Fibra' : 'Inalambrico';
 
@@ -235,8 +235,8 @@ function queuePlanInfo(maxLimit = '') {
     25: 120,
     40: 150,
     50: 149,
-    100: 200,
-    200: 300
+    100: 199,
+    200: 299
   };
   return {
     name: speed ? `Inalambrico ${speed} Mbps` : 'Inalambrico',
