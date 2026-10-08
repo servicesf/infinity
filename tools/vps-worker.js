@@ -669,7 +669,8 @@ async function listRouterQueues(router) {
 }
 
 function routerUsesPppoe(router) {
-  return String(router?.kind || '').trim().toLocaleLowerCase('es') === 'fibra';
+  const kind = String(router?.kind || '').trim().toLocaleLowerCase('es');
+  return kind === 'fibra' || kind.includes('pppoe');
 }
 
 async function listRouterUsage(router) {

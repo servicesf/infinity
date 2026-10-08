@@ -198,13 +198,15 @@ function planInfo(profile = '') {
     10: 95,
     20: 120,
     25: 120,
+    30: 149,
     40: 150,
     50: 149,
+    60: 199,
     100: 200,
     150: 250,
     200: 300
   };
-  const prefix = config.routerKind === 'fibra' ? 'Fibra' : 'Inalambrico';
+  const prefix = config.routerKind.startsWith('fibra') ? 'Fibra' : 'Inalambrico';
 
   return speed
     ? { name: `${prefix} ${speed} Mbps`, price: prices[speed] || 0 }
@@ -463,7 +465,7 @@ async function syncCustomerPlans(router, items) {
 
 async function availableCi(router, identity, candidate, existing) {
   if (existing && existing.ci) {
-    const legacyPasswordCi = config.routerKind !== 'fibra'
+    const legacyPasswordCi = config.importSource === 'queues'
       && candidate
       && existing.ci === candidate;
     if (!legacyPasswordCi) return existing.ci;
@@ -565,7 +567,7 @@ async function upsertCustomers(router, secrets) {
     }
 
     const radiusManaged = isRadiusManaged(identity);
-    const passwordCandidate = config.routerKind === 'fibra'
+    const passwordCandidate = config.importSource === 'pppoe'
       ? String(secret.password || '').trim()
       : '';
     const plan = planInfo(secret.profile);
